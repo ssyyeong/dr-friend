@@ -2,8 +2,8 @@ import React from "react";
 import styled from "styled-components/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
-import { AuthStackParamList } from "../../app/navigation/RootNavigator";
-import Button from "../../shared/components/common/Button";
+import { AuthStackParamList } from "../../../app/navigation/RootNavigator";
+import Button from "../../../shared/components/common/Button";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "SignupSuccess">;
 
@@ -64,7 +64,7 @@ const SignUpSuccessScreen: React.FC<Props> = ({ navigation }) => {
       <Screen>
         <Content>
           <CheckIcon
-            source={require("../../../assets/icon/round-check.svg")}
+            source={require("../../../../assets/icon/round-check.svg")}
             resizeMode="contain"
           />
           <Title>회원가입 완료</Title>

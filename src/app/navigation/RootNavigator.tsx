@@ -14,8 +14,8 @@ import ProfileScreen from "../../features/profile/ProfileScreen";
 
 import SplashScreen from "../../features/auth/SplashScreen";
 import LoginScreen from "../../features/auth/LoginScreen";
-import SignupScreen from "../../features/auth/SignupScreen";
-import SignUpSuccessScreen from "../../features/auth/SignUpSuccessScreen";
+import SignupScreen from "../../features/auth/signup/SignupScreen";
+import SignUpSuccessScreen from "../../features/auth/signup/SignUpSuccessScreen";
 import PasswordSuccessScreen from "../../features/auth/password/PasswordSuccessScreen";
 
 export type RootStackParamList = {

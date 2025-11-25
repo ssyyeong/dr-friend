@@ -64,7 +64,7 @@ const PasswordSuccessScreen: React.FC<Props> = ({ navigation }) => {
       <Screen>
         <Content>
           <CheckIcon
-            source={require("../../../assets/icon/round-check.svg")}
+            source={require("../../../../assets/icon/round-check.svg")}
             resizeMode="contain"
           />
           <Title>비밀번호 재설정 완료</Title>
