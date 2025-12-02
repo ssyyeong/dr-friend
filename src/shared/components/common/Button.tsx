@@ -3,7 +3,7 @@ import styled from "styled-components/native";
 import { TouchableOpacityProps, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
-type ButtonVariant = "primary" | "ghost" | "gradient";
+type ButtonVariant = "primary" | "ghost" | "gradient" | "block";
 
 interface ButtonProps extends TouchableOpacityProps {
   variant?: ButtonVariant;
@@ -18,12 +18,12 @@ const PrimaryButton = styled.TouchableOpacity`
   align-items: center;
 `;
 
-const GhostButton = styled.TouchableOpacity`
-  height: 56px;
-  border-radius: ${({ theme }) => theme.radius.md}px;
+const GhostButton = styled(PrimaryButton)`
   background-color: ${({ theme }) => theme.colors.gray700};
-  justify-content: center;
-  align-items: center;
+`;
+
+const BlockButton = styled(PrimaryButton)`
+  background-color: ${({ theme }) => theme.colors.gray900};
 `;
 
 const GradientButtonContainer = styled.View`
@@ -42,6 +42,10 @@ const Label = styled.Text`
   color: ${({ theme }) => theme.colors.gray0};
   font-size: 19px;
   font-weight: 500;
+`;
+
+const BlockLabel = styled(Label)`
+  color: ${({ theme }) => theme.colors.gray700};
 `;
 
 const Button: React.FC<ButtonProps> = ({
@@ -70,6 +74,14 @@ const Button: React.FC<ButtonProps> = ({
           </GradientBackground>
         </GradientButtonContainer>
       </TouchableOpacity>
+    );
+  }
+
+  if (variant === "block") {
+    return (
+      <GhostButton {...props}>
+        <BlockLabel>{children}</BlockLabel>
+      </GhostButton>
     );
   }
 

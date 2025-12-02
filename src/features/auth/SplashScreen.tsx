@@ -34,7 +34,7 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       // TODO: 나중에 토큰 체크해서 MainTab으로 바로 보낼 수도 있음
-      navigation.replace("Auth");
+      navigation.replace("MainTab");
     }, 1500);
 
     return () => clearTimeout(timer);

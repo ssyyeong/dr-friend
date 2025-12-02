@@ -133,7 +133,9 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             onChangeText={setPassword}
             secureTextEntry
           />
-          <PasswordButton onPress={() => {}}>비밀번호 찾기</PasswordButton>
+          <PasswordButton onPress={() => navigation.navigate("Password")}>
+            비밀번호 찾기
+          </PasswordButton>
 
           <Button variant="primary" onPress={handleLogin}>
             로그인

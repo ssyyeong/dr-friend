@@ -13,11 +13,21 @@ import CareScreen from "../../features/care/CareScreen";
 import ProfileScreen from "../../features/profile/ProfileScreen";
 
 import SplashScreen from "../../features/auth/SplashScreen";
+
 import LoginScreen from "../../features/auth/LoginScreen";
 import SignupScreen from "../../features/auth/signup/SignupScreen";
 import SignUpSuccessScreen from "../../features/auth/signup/SignUpSuccessScreen";
+import PasswordScreen from "../../features/auth/password/PasswordScreen";
+import PasswordAuthScreen from "../../features/auth/password/PasswordAuthScreen";
+import PasswordChangeScreen from "../../features/auth/password/PasswordChangeScreen";
 import PasswordSuccessScreen from "../../features/auth/password/PasswordSuccessScreen";
 
+import InfoStep1Screen from "../../features/auth/info/InfoStep1Screen";
+import InfoStep2Screen from "../../features/auth/info/InfoStep2Screen";
+import InfoStep3Screen from "../../features/auth/info/InfoStep3Screen";
+import InfoStep4Screen from "../../features/auth/info/InfoStep4Screen";
+
+import SelfTestScreen from "../../features/auth/selftest/SelfTestScreen";
 export type RootStackParamList = {
   Splash: undefined;
   Auth: undefined;
@@ -28,7 +38,15 @@ export type AuthStackParamList = {
   Login: undefined;
   Signup: undefined;
   SignupSuccess: undefined;
+  Password: undefined;
+  PasswordAuth: { email: string };
+  PasswordChange: undefined;
   PasswordSuccess: undefined;
+  InfoStep1: undefined;
+  InfoStep2: { step1Data: string[] };
+  InfoStep3: { step1Data: string[]; step2Data: any };
+  InfoStep4: { step1Data: string[]; step2Data: any; step3Data: any };
+  SelfTest: undefined;
 };
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
@@ -45,10 +63,21 @@ const AuthStackNavigator = () => {
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="Signup" component={SignupScreen} />
       <AuthStack.Screen name="SignupSuccess" component={SignUpSuccessScreen} />
+      <AuthStack.Screen name="Password" component={PasswordScreen} />
+      <AuthStack.Screen name="PasswordAuth" component={PasswordAuthScreen} />
+      <AuthStack.Screen
+        name="PasswordChange"
+        component={PasswordChangeScreen}
+      />
       <AuthStack.Screen
         name="PasswordSuccess"
         component={PasswordSuccessScreen}
       />
+      <AuthStack.Screen name="InfoStep1" component={InfoStep1Screen} />
+      <AuthStack.Screen name="InfoStep2" component={InfoStep2Screen} />
+      <AuthStack.Screen name="InfoStep3" component={InfoStep3Screen} />
+      <AuthStack.Screen name="InfoStep4" component={InfoStep4Screen} />
+      <AuthStack.Screen name="SelfTest" component={SelfTestScreen} />
     </AuthStack.Navigator>
   );
 };

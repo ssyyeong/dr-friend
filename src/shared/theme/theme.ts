@@ -15,7 +15,7 @@ export const theme: DefaultTheme = {
     gray50: "#E0E9F4",
     gray100: "#CAD7E7",
     gray200: "#AFBFD4",
-    gray300: "#89C8B6",
+    gray300: "#889CB6",
     gray400: "#6E86A5",
     gray500: "#4F6B91",
     gray600: "#324C71",
@@ -40,7 +40,7 @@ export const theme: DefaultTheme = {
     xxl: 32,
   },
   radius: {
-    sm: 6,
+    sm: 8,
     md: 12,
     lg: 16,
     xl: 24,

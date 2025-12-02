@@ -52,7 +52,7 @@ const ButtonContainer = styled.View`
 
 const SignUpSuccessScreen: React.FC<Props> = ({ navigation }) => {
   const handleGoToLogin = () => {
-    navigation.navigate("Login");
+    navigation.navigate("InfoStep1");
   };
 
   return (
