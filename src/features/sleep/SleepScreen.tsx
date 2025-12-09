@@ -1,18 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  Image,
-  ScrollView,
-  Dimensions,
-  Platform,
-  Modal,
-  TouchableOpacity,
-} from "react-native";
+import { ScrollView, Dimensions, Platform, Modal } from "react-native";
 import styled, { useTheme } from "styled-components/native";
-import { LinearGradient } from "expo-linear-gradient";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import Button from "../../shared/components/common/Button";
 import ToggleSwitch from "../../shared/components/common/ToggleSwitch";
+import SvgIcon from "../../shared/components/common/SvgIcon";
+import { SleepStackParamList } from "../../app/navigation/RootNavigator";
 
 // 웹 환경이 아닐 때만 알림 핸들러 설정
 if (Platform.OS !== "web") {
@@ -38,7 +34,7 @@ const ScrollableContent = styled.ScrollView`
 
 const Content = styled.View`
   flex: 1;
-  padding: 40px 24px 24px;
+  padding: 48px 24px 24px;
 `;
 
 const MoonIconContainer = styled.View`
@@ -146,7 +142,6 @@ const SelectionIndicator = styled.View`
 `;
 
 const ITEM_HEIGHT = 50;
-const VISIBLE_ITEMS = 3;
 
 // 취침 전 메모 옵션 데이터
 const sleepMemoOptions = [
@@ -253,7 +248,7 @@ const OptionsGrid = styled.View`
 `;
 
 const OptionButton = styled.TouchableOpacity<{ selected: boolean }>`
-  width: ${() => (Dimensions.get("window").width - 48 - 32) / 3}px;
+  width: 109px;
   height: 83px;
   background-color: ${({ theme }) => theme.colors.gray700};
   border-radius: ${({ theme }) => theme.radius.md}px;
@@ -262,16 +257,15 @@ const OptionButton = styled.TouchableOpacity<{ selected: boolean }>`
     selected ? theme.colors.text : theme.colors.gray300};
   justify-content: center;
   align-items: center;
-  padding-vertical: 16px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 `;
 
-const OptionIcon = styled.Image<{ selected: boolean }>`
+const OptionIconContainer = styled.View<{ selected: boolean }>`
   width: 20px;
   height: 20px;
   margin-bottom: 12px;
-  tint-color: ${({ selected, theme }) =>
-    selected ? theme.colors.text : theme.colors.gray400};
+  align-items: center;
+  justify-content: center;
 `;
 
 const OptionLabel = styled.Text<{ selected: boolean }>`
@@ -281,8 +275,14 @@ const OptionLabel = styled.Text<{ selected: boolean }>`
   text-align: center;
 `;
 
+type SleepScreenNavigationProp = NativeStackNavigationProp<
+  SleepStackParamList,
+  "Sleep"
+>;
+
 const SleepScreen = () => {
   const theme = useTheme();
+  const navigation = useNavigation<SleepScreenNavigationProp>();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [alarmEnabled, setAlarmEnabled] = useState(true);
   const [alarmTime, setAlarmTime] = useState(new Date());
@@ -620,10 +620,11 @@ const SleepScreen = () => {
       <ScrollableContent showsVerticalScrollIndicator={false}>
         <Content>
           <MoonIconContainer>
-            <Image
-              source={require("../../../assets/icon/moon.svg")}
-              resizeMode="contain"
-            />
+            {React.createElement(
+              require("../../../assets/icon/moon.svg").default ||
+                require("../../../assets/icon/moon.svg"),
+              { width: 100, height: 100 }
+            )}
           </MoonIconContainer>
 
           <CurrentTime>{currentTimeFormatted.time}</CurrentTime>
@@ -734,11 +735,16 @@ const SleepScreen = () => {
                     }}
                     activeOpacity={0.7}
                   >
-                    <OptionIcon
-                      source={option.icon}
-                      resizeMode="contain"
-                      selected={isSelected}
-                    />
+                    <OptionIconContainer selected={isSelected}>
+                      <SvgIcon
+                        Component={option.icon.default || option.icon}
+                        width={20}
+                        height={20}
+                        fill={
+                          isSelected ? theme.colors.text : theme.colors.gray400
+                        }
+                      />
+                    </OptionIconContainer>
                     <OptionLabel selected={isSelected}>
                       {option.label}
                     </OptionLabel>
@@ -753,6 +759,7 @@ const SleepScreen = () => {
                 // TODO: 선택된 옵션 저장 및 취침 시작 로직
                 console.log("Selected options:", selectedMemoOptions);
                 setIsMemoModalVisible(false);
+                navigation.navigate("DevicePlace");
               }}
             >
               다음

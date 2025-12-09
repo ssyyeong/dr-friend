@@ -5,8 +5,11 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "styled-components/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import SleepScreen from "../../features/sleep/SleepScreen";
+import DevicePlaceScreen from "../../features/sleep/DevicePlaceScreen";
+
 import DiaryScreen from "../../features/diary/DiaryScreen";
 import StatsScreen from "../../features/stats/StatsScreen";
 import CareScreen from "../../features/care/CareScreen";
@@ -49,8 +52,14 @@ export type AuthStackParamList = {
   SelfTest: undefined;
 };
 
+export type SleepStackParamList = {
+  Sleep: undefined;
+  DevicePlace: undefined;
+};
+
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+const SleepStack = createNativeStackNavigator<SleepStackParamList>();
 const Tab = createBottomTabNavigator();
 
 const AuthStackNavigator = () => {
@@ -82,8 +91,22 @@ const AuthStackNavigator = () => {
   );
 };
 
+const SleepStackNavigator = () => {
+  return (
+    <SleepStack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <SleepStack.Screen name="Sleep" component={SleepScreen} />
+      <SleepStack.Screen name="DevicePlace" component={DevicePlaceScreen} />
+    </SleepStack.Navigator>
+  );
+};
+
 const MainTabNavigator = () => {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -94,8 +117,8 @@ const MainTabNavigator = () => {
         tabBarStyle: {
           backgroundColor: theme.colors.tabBar,
           borderTopColor: "transparent",
-          height: 72,
-          paddingBottom: 10,
+          height: 72 + insets.bottom,
+          paddingBottom: Math.max(10, insets.bottom),
           paddingTop: 6,
         },
         tabBarLabelStyle: {
@@ -121,7 +144,7 @@ const MainTabNavigator = () => {
     >
       <Tab.Screen
         name="Sleep"
-        component={SleepScreen}
+        component={SleepStackNavigator}
         options={{ title: "수면" }}
       />
       <Tab.Screen
