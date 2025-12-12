@@ -14,6 +14,9 @@ import AlarmScreen from "../../features/sleep/AlarmScreen";
 import DiaryScreen from "../../features/diary/DiaryScreen";
 import StatsScreen from "../../features/stats/StatsScreen";
 import CareScreen from "../../features/care/CareScreen";
+import SleepHelpListScreen from "../../features/care/SleepHelpListScreen";
+import HealthStoryListScreen from "../../features/care/HealthStoryListScreen";
+import MedicalDeviceListScreen from "../../features/care/MedicalDeviceListScreen";
 
 import ProfileScreen from "../../features/profile/ProfileScreen";
 import SettingScreen from "../../features/profile/setting/SettingScreen";
@@ -86,10 +89,18 @@ export type ProfileStackParamList = {
   QnaWrite: undefined;
 };
 
+export type CareStackParamList = {
+  Care: undefined;
+  SleepHelpList: { category?: string };
+  HealthStoryList: undefined;
+  MedicalDeviceList: undefined;
+};
+
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const SleepStack = createNativeStackNavigator<SleepStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
+const CareStack = createNativeStackNavigator<CareStackParamList>();
 const Tab = createBottomTabNavigator();
 
 const AuthStackNavigator = () => {
@@ -157,6 +168,27 @@ const ProfileStackNavigator = () => {
   );
 };
 
+const CareStackNavigator = () => {
+  return (
+    <CareStack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <CareStack.Screen name="Care" component={CareScreen} />
+      <CareStack.Screen name="SleepHelpList" component={SleepHelpListScreen} />
+      <CareStack.Screen
+        name="HealthStoryList"
+        component={HealthStoryListScreen}
+      />
+      <CareStack.Screen
+        name="MedicalDeviceList"
+        component={MedicalDeviceListScreen}
+      />
+    </CareStack.Navigator>
+  );
+};
+
 const MainTabNavigator = () => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -212,7 +244,7 @@ const MainTabNavigator = () => {
       />
       <Tab.Screen
         name="Care"
-        component={CareScreen}
+        component={CareStackNavigator}
         options={{ title: "케어" }}
       />
       <Tab.Screen
