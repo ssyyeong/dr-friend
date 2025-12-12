@@ -93,7 +93,7 @@ const ProductSelectScreen = () => {
                 <ProductItem
                   key={product}
                   isSelected={isSelected}
-                  activeOpacity={0.7}
+                  activeOpacity={1}
                   onPress={() => handleProductToggle(product)}
                 >
                   <ProductText isSelected={isSelected}>{product}</ProductText>

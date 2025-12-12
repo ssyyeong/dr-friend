@@ -130,7 +130,7 @@ const CareScreen = () => {
               onPress={() => {
                 // 수면 건강 진단하기 버튼 액션
               }}
-              activeOpacity={0.8}
+              activeOpacity={1}
             >
               <GradientBackground
                 colors={["#7353FF", "#25C3FB"]}

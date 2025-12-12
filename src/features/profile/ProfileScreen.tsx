@@ -228,7 +228,7 @@ const ProfileScreen = () => {
             {settingsItems.map((item, index) => (
               <ListItem
                 key={index}
-                activeOpacity={0.7}
+                activeOpacity={1}
                 style={{
                   borderBottomWidth: index === settingsItems.length - 1 ? 0 : 1,
                 }}
@@ -257,7 +257,7 @@ const ProfileScreen = () => {
             {customerCenterItems.map((item, index) => (
               <ListItem
                 key={index}
-                activeOpacity={0.7}
+                activeOpacity={1}
                 style={{
                   borderBottomWidth:
                     index === customerCenterItems.length - 1 ? 0 : 1,

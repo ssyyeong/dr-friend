@@ -157,7 +157,7 @@ const HealthStoryListScreen = () => {
               key={category}
               active={selectedCategory === category}
               onPress={() => setSelectedCategory(category)}
-              activeOpacity={0.7}
+              activeOpacity={1}
             >
               <CategoryText active={selectedCategory === category}>
                 {category}
@@ -174,7 +174,7 @@ const HealthStoryListScreen = () => {
                 onPress={() => {
                   // 아이템 상세 화면으로 이동
                 }}
-                activeOpacity={0.8}
+                activeOpacity={1}
               >
                 <ItemImageContainer>
                   {item.image ? (

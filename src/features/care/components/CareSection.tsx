@@ -102,7 +102,7 @@ const CareSection: React.FC<CareSectionProps> = ({
               key={category}
               active={selectedCategory === category}
               onPress={() => onCategoryChange?.(category)}
-              activeOpacity={0.7}
+              activeOpacity={1}
             >
               <CategoryText active={selectedCategory === category}>
                 {category}

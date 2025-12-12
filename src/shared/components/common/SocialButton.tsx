@@ -37,7 +37,7 @@ const SocialButton: React.FC<SocialButtonProps> = ({
   ...props
 }) => {
   return (
-    <SocialButtonContainer activeOpacity={0.8} {...props}>
+    <SocialButtonContainer activeOpacity={1} {...props}>
       <IconImage source={icon} resizeMode="contain" />
       <Label>{label}</Label>
     </SocialButtonContainer>

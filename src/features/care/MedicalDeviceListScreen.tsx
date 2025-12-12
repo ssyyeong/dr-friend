@@ -139,6 +139,7 @@ const ProductCardImage = styled(Image)`
 `;
 
 const ProductCardTitle = styled.Text`
+  margin-top: 8px;
   font-size: 18px;
   color: ${({ theme }) => theme.colors.text};
   text-align: left;
@@ -152,22 +153,22 @@ const MedicalDeviceListScreen = () => {
   const products = [
     {
       id: "1",
-      image: null,
+      image: require("../../../assets/image/bed.png"),
       title: "어싱 닥터프렌드 (매트)",
     },
     {
       id: "2",
-      image: null,
+      image: require("../../../assets/image/bed2.png"),
       title: "뉴슬립패드",
     },
     {
       id: "3",
-      image: null,
+      image: require("../../../assets/image/bed.png"),
       title: "어싱 닥터프렌드 (매트)",
     },
     {
       id: "4",
-      image: null,
+      image: require("../../../assets/image/bed2.png"),
       title: "뉴슬립패드",
     },
   ];
@@ -190,7 +191,7 @@ const MedicalDeviceListScreen = () => {
               onPress={() => {
                 // 공식몰 바로가기
               }}
-              activeOpacity={0.8}
+              activeOpacity={1}
             >
               <ActionButtonText variant="primary">
                 공식몰 바로가기
@@ -201,7 +202,7 @@ const MedicalDeviceListScreen = () => {
               onPress={() => {
                 // 제품 상담 신청
               }}
-              activeOpacity={0.8}
+              activeOpacity={1}
             >
               <ActionButtonText variant="secondary">
                 제품 상담 신청
@@ -218,7 +219,7 @@ const MedicalDeviceListScreen = () => {
 
           {/* <MoreButton
             onPress={() => setShowMore(!showMore)}
-            activeOpacity={0.7}
+            activeOpacity={1}
           >
             <MoreButtonText>더보기</MoreButtonText>
           </MoreButton> */}
@@ -235,7 +236,7 @@ const MedicalDeviceListScreen = () => {
                   onPress={() => {
                     // 제품 상세 화면으로 이동
                   }}
-                  activeOpacity={0.8}
+                  activeOpacity={1}
                 >
                   <ProductCardImageContainer>
                     {product.image ? (

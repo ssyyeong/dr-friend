@@ -63,7 +63,7 @@ const Button: React.FC<ButtonProps> = ({
 
   if (variant === "gradient") {
     return (
-      <TouchableOpacity activeOpacity={0.8} {...props}>
+      <TouchableOpacity activeOpacity={1} {...props}>
         <GradientButtonContainer>
           <GradientBackground
             colors={["#7353FF", "#25C3FB"]}
@@ -86,7 +86,7 @@ const Button: React.FC<ButtonProps> = ({
   }
 
   return (
-    <PrimaryButton activeOpacity={0.8} {...props}>
+    <PrimaryButton activeOpacity={1} {...props}>
       <Label>{children}</Label>
     </PrimaryButton>
   );

@@ -86,7 +86,7 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
   return (
     <ToggleSwitchTouchable
       onPress={() => onValueChange(!value)}
-      activeOpacity={0.8}
+      activeOpacity={1}
       width={sizeConfig.width}
       height={sizeConfig.height}
     >

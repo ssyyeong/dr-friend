@@ -385,7 +385,7 @@ const SettingScreen: React.FC = () => {
           {/* 계정 섹션 */}
           <Section>
             <SectionTitle>계정</SectionTitle>
-            <AccountCard activeOpacity={0.7}>
+            <AccountCard activeOpacity={1}>
               <AccountEmail>drf@gmail.com</AccountEmail>
               <Ionicons
                 name="chevron-forward"
@@ -437,7 +437,7 @@ const SettingScreen: React.FC = () => {
           <Section>
             <SectionTitle>나의 닥터프렌드 제품</SectionTitle>
             <ProductCard
-              activeOpacity={0.7}
+              activeOpacity={1}
               onPress={() => navigation.navigate("ProductSelect")}
             >
               <ProductLeft>

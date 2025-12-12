@@ -661,7 +661,7 @@ const SleepScreen = () => {
             {!isMorning && sleepStatus === "sleeping" && (
               <>
                 <BlockButton
-                  activeOpacity={0.8}
+                  activeOpacity={1}
                   onPress={() => {
                     setSleepStatus("stopped");
                     if (isMorning) {
@@ -672,7 +672,7 @@ const SleepScreen = () => {
                   <BlockLabel>정지</BlockLabel>
                 </BlockButton>
                 <AlarmButton
-                  activeOpacity={0.7}
+                  activeOpacity={1}
                   onPress={() => setIsAlarmChangeModalVisible(true)}
                 >
                   <AlarmButtonText>
@@ -685,7 +685,7 @@ const SleepScreen = () => {
             {/* 밤 + 수면정지 이후: 지금 취침 버튼 */}
             {!isMorning && sleepStatus === "stopped" && (
               <BlockButton
-                activeOpacity={0.8}
+                activeOpacity={1}
                 onPress={() => setIsMemoModalVisible(true)}
               >
                 <BlockLabel>지금 취침</BlockLabel>
@@ -695,7 +695,7 @@ const SleepScreen = () => {
             {/* 아침 + 수면중: 정지 버튼 */}
             {isMorning && sleepStatus === "sleeping" && (
               <BlockButton
-                activeOpacity={0.8}
+                activeOpacity={1}
                 onPress={() => {
                   setSleepStatus("stopped");
                   setIsReAlarmModalVisible(true);
@@ -708,7 +708,7 @@ const SleepScreen = () => {
             {/* 아침 + 수면정지 이후: 기상 버튼 */}
             {isMorning && sleepStatus === "stopped" && (
               <BlockButton
-                activeOpacity={0.8}
+                activeOpacity={1}
                 onPress={() => {
                   // 기상 처리 로직
                   setSleepStatus("stopped");
@@ -738,7 +738,7 @@ const SleepScreen = () => {
               <ModalTitle>알림 변경</ModalTitle>
               <CloseButton
                 onPress={() => setIsAlarmChangeModalVisible(false)}
-                activeOpacity={0.7}
+                activeOpacity={1}
               >
                 <Ionicons name="close" size={24} color={theme.colors.text} />
               </CloseButton>
@@ -812,7 +812,7 @@ const SleepScreen = () => {
               <ModalTitle>다시 알림을 설정하시겠습니까?</ModalTitle>
               <CloseButton
                 onPress={() => setIsReAlarmModalVisible(false)}
-                activeOpacity={0.7}
+                activeOpacity={1}
               >
                 <Ionicons name="close" size={24} color={theme.colors.text} />
               </CloseButton>

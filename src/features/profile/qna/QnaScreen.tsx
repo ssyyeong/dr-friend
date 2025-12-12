@@ -316,14 +316,14 @@ const QnaScreen = () => {
             <Tab
               active={activeTab === "answered"}
               onPress={() => handleTabChange("answered")}
-              activeOpacity={0.7}
+              activeOpacity={1}
             >
               <TabText active={activeTab === "answered"}>답변 후</TabText>
             </Tab>
             <Tab
               active={activeTab === "pending"}
               onPress={() => handleTabChange("pending")}
-              activeOpacity={0.7}
+              activeOpacity={1}
             >
               <TabText active={activeTab === "pending"}>답변 전</TabText>
             </Tab>
@@ -336,7 +336,7 @@ const QnaScreen = () => {
                   <QnaHeader
                     expanded={expandedItems.has(item.id)}
                     onPress={() => toggleQna(item.id)}
-                    activeOpacity={0.7}
+                    activeOpacity={1}
                   >
                     <QnaTitle>{item.title}</QnaTitle>
                     <Ionicons
@@ -361,7 +361,7 @@ const QnaScreen = () => {
                           {activeTab === "pending" && (
                             <DeleteButton
                               onPress={() => handleDelete(item.id)}
-                              activeOpacity={0.7}
+                              activeOpacity={1}
                             >
                               <DeleteButtonText>삭제</DeleteButtonText>
                             </DeleteButton>
@@ -393,7 +393,7 @@ const QnaScreen = () => {
             <PaginationButton
               disabled={currentPage === 1}
               onPress={() => handlePageChange(currentPage - 1)}
-              activeOpacity={0.7}
+              activeOpacity={1}
             >
               <Ionicons
                 name="chevron-back"
@@ -406,7 +406,7 @@ const QnaScreen = () => {
                 key={page}
                 active={currentPage === page}
                 onPress={() => handlePageChange(page)}
-                activeOpacity={0.7}
+                activeOpacity={1}
               >
                 <PageNumberText>{page}</PageNumberText>
               </PageNumber>
@@ -414,7 +414,7 @@ const QnaScreen = () => {
             <PaginationButton
               disabled={currentPage === totalPages}
               onPress={() => handlePageChange(currentPage + 1)}
-              activeOpacity={0.7}
+              activeOpacity={1}
             >
               <Ionicons
                 name="chevron-forward"

@@ -94,7 +94,7 @@ const InfoStep1Screen: React.FC<Props> = ({ navigation }) => {
               key={index}
               selected={selectedOptions.includes(option)}
               onPress={() => toggleOption(option)}
-              activeOpacity={0.7}
+              activeOpacity={1}
             >
               <OptionText>{option}</OptionText>
               {selectedOptions.includes(option) ? (

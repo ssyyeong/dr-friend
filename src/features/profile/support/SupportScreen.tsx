@@ -343,14 +343,14 @@ const SupportScreen = () => {
             <Tab
               active={activeTab === "faq"}
               onPress={() => handleTabChange("faq")}
-              activeOpacity={0.7}
+              activeOpacity={1}
             >
               <TabText active={activeTab === "faq"}>자주묻는 질문</TabText>
             </Tab>
             <Tab
               active={activeTab === "notice"}
               onPress={() => handleTabChange("notice")}
-              activeOpacity={0.7}
+              activeOpacity={1}
             >
               <TabText active={activeTab === "notice"}>공지 사항</TabText>
             </Tab>
@@ -371,7 +371,7 @@ const SupportScreen = () => {
                       setFaqCurrentPage(1);
                       setExpandedItems(new Set());
                     }}
-                    activeOpacity={0.7}
+                    activeOpacity={1}
                   >
                     <CategoryChipText>{category}</CategoryChipText>
                   </CategoryChip>
@@ -384,7 +384,7 @@ const SupportScreen = () => {
                     <FAQHeader
                       expanded={expandedItems.has(item.id)}
                       onPress={() => toggleFAQ(item.id)}
-                      activeOpacity={0.7}
+                      activeOpacity={1}
                     >
                       <FAQCategory>[{item.category}]</FAQCategory>
                       <FAQTitle>{item.title}</FAQTitle>
@@ -418,7 +418,7 @@ const SupportScreen = () => {
                     onPress={() =>
                       navigation.navigate("NoticeDetail", { notice: item })
                     }
-                    activeOpacity={0.7}
+                    activeOpacity={1}
                     style={{
                       borderBottomWidth:
                         index === paginatedNotice.length - 1 ? 0 : 1,
@@ -444,7 +444,7 @@ const SupportScreen = () => {
             <PaginationButton
               disabled={faqCurrentPage === 1}
               onPress={() => handleFaqPageChange(faqCurrentPage - 1)}
-              activeOpacity={0.7}
+              activeOpacity={1}
             >
               <Ionicons
                 name="chevron-back"
@@ -458,7 +458,7 @@ const SupportScreen = () => {
                   key={page}
                   active={faqCurrentPage === page}
                   onPress={() => handleFaqPageChange(page)}
-                  activeOpacity={0.7}
+                  activeOpacity={1}
                 >
                   <PageNumberText>{page}</PageNumberText>
                 </PageNumber>
@@ -467,7 +467,7 @@ const SupportScreen = () => {
             <PaginationButton
               disabled={faqCurrentPage === faqTotalPages}
               onPress={() => handleFaqPageChange(faqCurrentPage + 1)}
-              activeOpacity={0.7}
+              activeOpacity={1}
             >
               <Ionicons
                 name="chevron-forward"
@@ -483,7 +483,7 @@ const SupportScreen = () => {
             <PaginationButton
               disabled={noticeCurrentPage === 1}
               onPress={() => handleNoticePageChange(noticeCurrentPage - 1)}
-              activeOpacity={0.7}
+              activeOpacity={1}
             >
               <Ionicons
                 name="chevron-back"
@@ -497,7 +497,7 @@ const SupportScreen = () => {
                   key={page}
                   active={noticeCurrentPage === page}
                   onPress={() => handleNoticePageChange(page)}
-                  activeOpacity={0.7}
+                  activeOpacity={1}
                 >
                   <PageNumberText>{page}</PageNumberText>
                 </PageNumber>
@@ -506,7 +506,7 @@ const SupportScreen = () => {
             <PaginationButton
               disabled={noticeCurrentPage === noticeTotalPages}
               onPress={() => handleNoticePageChange(noticeCurrentPage + 1)}
-              activeOpacity={0.7}
+              activeOpacity={1}
             >
               <Ionicons
                 name="chevron-forward"

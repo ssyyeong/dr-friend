@@ -708,7 +708,7 @@ const SleepScreen = () => {
               <ModalTitle>취침 전 메모</ModalTitle>
               <CloseButton
                 onPress={() => setIsMemoModalVisible(false)}
-                activeOpacity={0.7}
+                activeOpacity={1}
               >
                 <Ionicons name="close" size={24} color={theme.colors.text} />
               </CloseButton>
@@ -733,7 +733,7 @@ const SleepScreen = () => {
                         ]);
                       }
                     }}
-                    activeOpacity={0.7}
+                    activeOpacity={1}
                   >
                     <OptionIconContainer selected={isSelected}>
                       <SvgIcon
