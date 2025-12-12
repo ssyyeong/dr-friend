@@ -25,7 +25,7 @@ export const theme: DefaultTheme = {
     gray1000: "#09182C",
 
     // Background / Text Defaults
-    background: "#09182C", // 다크한 전체 배경
+    background: "#0C1D33", // 다크한 전체 배경
     surface: "#09182C", // 카드, 모달 배경
     tabBar: "#0C1D33", // 탭바 배경 (추가)
     text: "#F2F5FA", // 기본 White

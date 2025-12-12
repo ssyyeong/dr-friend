@@ -79,9 +79,9 @@ const Button: React.FC<ButtonProps> = ({
 
   if (variant === "block") {
     return (
-      <GhostButton {...props}>
+      <BlockButton {...props}>
         <BlockLabel>{children}</BlockLabel>
-      </GhostButton>
+      </BlockButton>
     );
   }
 

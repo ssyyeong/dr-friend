@@ -22,3 +22,10 @@ const SvgImage: React.FC<SvgImageProps> = ({
 };
 
 export default SvgImage;
+
+
+
+
+
+
+

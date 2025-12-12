@@ -9,11 +9,20 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import SleepScreen from "../../features/sleep/SleepScreen";
 import DevicePlaceScreen from "../../features/sleep/DevicePlaceScreen";
+import AlarmScreen from "../../features/sleep/AlarmScreen";
 
 import DiaryScreen from "../../features/diary/DiaryScreen";
 import StatsScreen from "../../features/stats/StatsScreen";
 import CareScreen from "../../features/care/CareScreen";
+
 import ProfileScreen from "../../features/profile/ProfileScreen";
+import SettingScreen from "../../features/profile/setting/SettingScreen";
+import ProductSelectScreen from "../../features/profile/setting/ProductSelectScreen";
+import AuthScreen from "../../features/profile/AuthScreen";
+import SupportScreen from "../../features/profile/support/SupportScreen";
+import NoticeDetailScreen from "../../features/profile/support/NoticeDetailScreen";
+import QnaScreen from "../../features/profile/qna/QnaScreen";
+import QnaWriteScreen from "../../features/profile/qna/QnaWriteScreen";
 
 import SplashScreen from "../../features/auth/SplashScreen";
 
@@ -55,11 +64,32 @@ export type AuthStackParamList = {
 export type SleepStackParamList = {
   Sleep: undefined;
   DevicePlace: undefined;
+  Alarm: undefined;
+};
+
+export type ProfileStackParamList = {
+  Profile: undefined;
+  Setting: undefined;
+  ProductSelect: undefined;
+  Auth: undefined;
+  Support: undefined;
+  NoticeDetail: {
+    notice: {
+      id: number;
+      category: string;
+      title: string;
+      content: string;
+      date?: string;
+    };
+  };
+  Qna: undefined;
+  QnaWrite: undefined;
 };
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const SleepStack = createNativeStackNavigator<SleepStackParamList>();
+const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 const Tab = createBottomTabNavigator();
 
 const AuthStackNavigator = () => {
@@ -100,7 +130,30 @@ const SleepStackNavigator = () => {
     >
       <SleepStack.Screen name="Sleep" component={SleepScreen} />
       <SleepStack.Screen name="DevicePlace" component={DevicePlaceScreen} />
+      <SleepStack.Screen name="Alarm" component={AlarmScreen} />
     </SleepStack.Navigator>
+  );
+};
+
+const ProfileStackNavigator = () => {
+  return (
+    <ProfileStack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <ProfileStack.Screen name="Profile" component={ProfileScreen} />
+      <ProfileStack.Screen name="Setting" component={SettingScreen} />
+      <ProfileStack.Screen
+        name="ProductSelect"
+        component={ProductSelectScreen}
+      />
+      <ProfileStack.Screen name="Auth" component={AuthScreen} />
+      <ProfileStack.Screen name="Support" component={SupportScreen} />
+      <ProfileStack.Screen name="NoticeDetail" component={NoticeDetailScreen} />
+      <ProfileStack.Screen name="Qna" component={QnaScreen} />
+      <ProfileStack.Screen name="QnaWrite" component={QnaWriteScreen} />
+    </ProfileStack.Navigator>
   );
 };
 
@@ -164,7 +217,7 @@ const MainTabNavigator = () => {
       />
       <Tab.Screen
         name="Profile"
-        component={ProfileScreen}
+        component={ProfileStackNavigator}
         options={{ title: "프로필" }}
       />
     </Tab.Navigator>

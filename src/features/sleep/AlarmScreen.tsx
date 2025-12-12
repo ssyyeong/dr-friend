@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { ScrollView, Dimensions, Platform, Modal } from "react-native";
 import styled, { useTheme } from "styled-components/native";
 import { useNavigation } from "@react-navigation/native";
@@ -6,9 +6,12 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import Button from "../../shared/components/common/Button";
-import ToggleSwitch from "../../shared/components/common/ToggleSwitch";
 import SvgIcon from "../../shared/components/common/SvgIcon";
 import { SleepStackParamList } from "../../app/navigation/RootNavigator";
+
+// 배경 컴포넌트를 컴포넌트 외부에서 로드하여 재생성 방지
+const MorningBackground = require("../../../assets/image/alarm-morning-background.svg");
+const NightBackground = require("../../../assets/image/alarm-night-background.svg");
 
 // 웹 환경이 아닐 때만 알림 핸들러 설정
 if (Platform.OS !== "web") {
@@ -25,7 +28,16 @@ if (Platform.OS !== "web") {
 
 const Screen = styled.SafeAreaView`
   flex: 1;
-  background-color: ${({ theme }) => theme.colors.background};
+`;
+
+const BackgroundContainer = styled.View`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
 `;
 
 const ScrollableContent = styled.ScrollView`
@@ -62,22 +74,34 @@ const SleepButtonContainer = styled.View`
   margin-bottom: 32px;
 `;
 
-const SettingCard = styled.View`
-  background-color: rgba(79, 107, 145, 0.24);
-  border-radius: ${({ theme }) => theme.radius.lg}px;
-  padding: 20px;
+const BlockButton = styled.TouchableOpacity`
+  width: 100%;
+  background-color: ${({ theme }) => theme.colors.primary};
+  border-radius: ${({ theme }) => theme.radius.md}px;
+  padding: 16px;
+  align-items: center;
+  justify-content: center;
+`;
+
+const BlockLabel = styled.Text`
+  font-size: 18px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+const AlarmButton = styled.TouchableOpacity`
+  width: 100%;
+  border-width: 1px;
+  border-color: ${({ theme }) => theme.colors.text};
+  border-radius: ${({ theme }) => theme.radius.md}px;
+  padding: 12px;
+  align-items: center;
+  justify-content: center;
   margin-top: 12px;
 `;
 
-const SettingHeader = styled.View`
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-`;
-
-const SettingTitle = styled.Text`
-  font-size: 18px;
-  font-weight: 500;
+const AlarmButtonText = styled.Text`
+  font-size: 16px;
   color: ${({ theme }) => theme.colors.text};
 `;
 
@@ -240,41 +264,6 @@ const CloseButton = styled.TouchableOpacity`
   align-items: center;
 `;
 
-const OptionsGrid = styled.View`
-  flex-direction: row;
-  flex-wrap: wrap;
-  margin-bottom: 32px;
-  justify-content: space-between;
-`;
-
-const OptionButton = styled.TouchableOpacity<{ selected: boolean }>`
-  width: 109px;
-  height: 83px;
-  background-color: ${({ theme }) => theme.colors.gray700};
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  border-width: ${({ selected }) => (selected ? 1 : 0)}px;
-  border-color: ${({ selected, theme }) =>
-    selected ? theme.colors.text : theme.colors.gray300};
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 8px;
-`;
-
-const OptionIconContainer = styled.View<{ selected: boolean }>`
-  width: 20px;
-  height: 20px;
-  margin-bottom: 12px;
-  align-items: center;
-  justify-content: center;
-`;
-
-const OptionLabel = styled.Text<{ selected: boolean }>`
-  font-size: 16px;
-  color: ${({ selected, theme }) =>
-    selected ? theme.colors.text : theme.colors.gray300};
-  text-align: center;
-`;
-
 type SleepScreenNavigationProp = NativeStackNavigationProp<
   SleepStackParamList,
   "Sleep"
@@ -289,6 +278,36 @@ const SleepScreen = () => {
   const [snoringRecordingEnabled, setSnoringRecordingEnabled] = useState(false);
   const [isMemoModalVisible, setIsMemoModalVisible] = useState(false);
   const [selectedMemoOptions, setSelectedMemoOptions] = useState<string[]>([]);
+
+  // 수면 상태 관리: 'sleeping' | 'stopped'
+  const [sleepStatus, setSleepStatus] = useState<"sleeping" | "stopped">(
+    "stopped"
+  );
+
+  // 알림 변경 모달 상태
+  const [isAlarmChangeModalVisible, setIsAlarmChangeModalVisible] =
+    useState(false);
+
+  // 다시 알림 모달 상태 (수면정지 이후 아침에만 표시)
+  const [isReAlarmModalVisible, setIsReAlarmModalVisible] = useState(false);
+
+  // 초기 마운트 시점의 시간으로 배경 결정 (한 번만 설정)
+  const initialTime = useRef(new Date());
+  const isMorning = useMemo(() => initialTime.current.getHours() >= 6, []);
+
+  // 화면 크기를 한 번만 계산하여 고정
+  const screenDimensions = useRef({
+    width: Dimensions.get("window").width,
+    height: Dimensions.get("window").height,
+  });
+
+  // 배경 컴포넌트를 한 번만 결정하여 고정
+  const BackgroundSvgComponent = useMemo(
+    () =>
+      (isMorning ? MorningBackground : NightBackground).default ||
+      (isMorning ? MorningBackground : NightBackground),
+    [isMorning]
+  );
 
   const [selectedHour, setSelectedHour] = useState(9);
   const [selectedMinute, setSelectedMinute] = useState(41);
@@ -617,6 +636,13 @@ const SleepScreen = () => {
 
   return (
     <Screen>
+      <BackgroundContainer>
+        <BackgroundSvgComponent
+          width={screenDimensions.current.width}
+          height={screenDimensions.current.height}
+          preserveAspectRatio="xMidYMid slice"
+        />
+      </BackgroundContainer>
       <ScrollableContent showsVerticalScrollIndicator={false}>
         <Content>
           <MoonIconContainer>
@@ -631,137 +657,178 @@ const SleepScreen = () => {
           <CurrentDate>{currentDateFormatted}</CurrentDate>
 
           <SleepButtonContainer>
-            <Button
-              variant="primary"
-              onPress={() => setIsMemoModalVisible(true)}
-            >
-              지금 취침
-            </Button>
-          </SleepButtonContainer>
-
-          <SettingCard>
-            <SettingHeader>
-              <SettingTitle>알림 설정</SettingTitle>
-              <ToggleSwitch
-                value={alarmEnabled}
-                onValueChange={setAlarmEnabled}
-                size="small"
-              />
-            </SettingHeader>
-            {alarmEnabled && (
-              <TimePickerContainer>
-                <TimePickerWrapper>
-                  {renderPickerItems(
-                    Array.from({ length: 12 }, (_, i) => i + 1),
-                    selectedHour,
-                    handleHourScroll,
-                    handleHourScrollEnd,
-                    hourScrollRef
-                  )}
-                  <TimeSeparator>:</TimeSeparator>
-                  {renderPickerItems(
-                    Array.from({ length: 60 }, (_, i) => i),
-                    selectedMinute,
-                    handleMinuteScroll,
-                    handleMinuteScrollEnd,
-                    minuteScrollRef
-                  )}
-                  {renderPickerItems(
-                    ["AM", "PM"],
-                    selectedAmPm,
-                    handleAmPmScroll,
-                    handleAmPmScrollEnd,
-                    amPmScrollRef
-                  )}
-                </TimePickerWrapper>
-              </TimePickerContainer>
+            {/* 밤 + 수면중: 정지 버튼 + 알림 버튼 */}
+            {!isMorning && sleepStatus === "sleeping" && (
+              <>
+                <BlockButton
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    setSleepStatus("stopped");
+                    if (isMorning) {
+                      setIsReAlarmModalVisible(true);
+                    }
+                  }}
+                >
+                  <BlockLabel>정지</BlockLabel>
+                </BlockButton>
+                <AlarmButton
+                  activeOpacity={0.7}
+                  onPress={() => setIsAlarmChangeModalVisible(true)}
+                >
+                  <AlarmButtonText>
+                    알림 {alarmTimeFormatted.time}
+                  </AlarmButtonText>
+                </AlarmButton>
+              </>
             )}
-          </SettingCard>
 
-          <SettingCard>
-            <SettingHeader>
-              <SettingTitle>코골이 녹음</SettingTitle>
-              <ToggleSwitch
-                value={snoringRecordingEnabled}
-                onValueChange={setSnoringRecordingEnabled}
-                size="small"
-              />
-            </SettingHeader>
-          </SettingCard>
+            {/* 밤 + 수면정지 이후: 지금 취침 버튼 */}
+            {!isMorning && sleepStatus === "stopped" && (
+              <BlockButton
+                activeOpacity={0.8}
+                onPress={() => setIsMemoModalVisible(true)}
+              >
+                <BlockLabel>지금 취침</BlockLabel>
+              </BlockButton>
+            )}
+
+            {/* 아침 + 수면중: 정지 버튼 */}
+            {isMorning && sleepStatus === "sleeping" && (
+              <BlockButton
+                activeOpacity={0.8}
+                onPress={() => {
+                  setSleepStatus("stopped");
+                  setIsReAlarmModalVisible(true);
+                }}
+              >
+                <BlockLabel>정지</BlockLabel>
+              </BlockButton>
+            )}
+
+            {/* 아침 + 수면정지 이후: 기상 버튼 */}
+            {isMorning && sleepStatus === "stopped" && (
+              <BlockButton
+                activeOpacity={0.8}
+                onPress={() => {
+                  // 기상 처리 로직
+                  setSleepStatus("stopped");
+                }}
+              >
+                <BlockLabel>기상</BlockLabel>
+              </BlockButton>
+            )}
+          </SleepButtonContainer>
         </Content>
       </ScrollableContent>
 
-      {/* 취침 전 메모 모달 */}
+      {/* 알림 변경 모달 */}
       <Modal
-        visible={isMemoModalVisible}
+        visible={isAlarmChangeModalVisible}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setIsMemoModalVisible(false)}
+        onRequestClose={() => setIsAlarmChangeModalVisible(false)}
       >
         <ModalOverlay>
           <OverlayTouchable
             activeOpacity={1}
-            onPress={() => setIsMemoModalVisible(false)}
+            onPress={() => setIsAlarmChangeModalVisible(false)}
           />
           <ModalCard>
             <ModalHeader>
-              <ModalTitle>취침 전 메모</ModalTitle>
+              <ModalTitle>알림 변경</ModalTitle>
               <CloseButton
-                onPress={() => setIsMemoModalVisible(false)}
+                onPress={() => setIsAlarmChangeModalVisible(false)}
                 activeOpacity={0.7}
               >
                 <Ionicons name="close" size={24} color={theme.colors.text} />
               </CloseButton>
             </ModalHeader>
 
-            <OptionsGrid>
-              {sleepMemoOptions.map((option) => {
-                const isSelected = selectedMemoOptions.includes(option.id);
-                return (
-                  <OptionButton
-                    key={option.id}
-                    selected={isSelected}
-                    onPress={() => {
-                      if (isSelected) {
-                        setSelectedMemoOptions(
-                          selectedMemoOptions.filter((id) => id !== option.id)
-                        );
-                      } else {
-                        setSelectedMemoOptions([
-                          ...selectedMemoOptions,
-                          option.id,
-                        ]);
-                      }
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <OptionIconContainer selected={isSelected}>
-                      <SvgIcon
-                        Component={option.icon.default || option.icon}
-                        width={20}
-                        height={20}
-                        fill={
-                          isSelected ? theme.colors.text : theme.colors.gray400
-                        }
-                      />
-                    </OptionIconContainer>
-                    <OptionLabel selected={isSelected}>
-                      {option.label}
-                    </OptionLabel>
-                  </OptionButton>
-                );
-              })}
-            </OptionsGrid>
+            <TimePickerContainer>
+              <TimePickerWrapper>
+                {renderPickerItems(
+                  Array.from({ length: 12 }, (_, i) => i + 1),
+                  selectedHour,
+                  handleHourScroll,
+                  handleHourScrollEnd,
+                  hourScrollRef
+                )}
+                <TimeSeparator>:</TimeSeparator>
+                {renderPickerItems(
+                  Array.from({ length: 60 }, (_, i) => i),
+                  selectedMinute,
+                  handleMinuteScroll,
+                  handleMinuteScrollEnd,
+                  minuteScrollRef
+                )}
+                {renderPickerItems(
+                  ["AM", "PM"],
+                  selectedAmPm,
+                  handleAmPmScroll,
+                  handleAmPmScrollEnd,
+                  amPmScrollRef
+                )}
+              </TimePickerWrapper>
+            </TimePickerContainer>
 
-            <Button
-              variant="primary"
-              onPress={() => {
-                setIsMemoModalVisible(false);
-                navigation.navigate("DevicePlace");
-              }}
+            <SleepButtonContainer
+              style={{ flexDirection: "row", marginTop: 24 }}
             >
-              다음
-            </Button>
+              <Button
+                variant="ghost"
+                onPress={() => setIsAlarmChangeModalVisible(false)}
+                style={{ flex: 1, marginRight: 6 }}
+              >
+                취소
+              </Button>
+              <Button
+                variant="primary"
+                onPress={() => {
+                  setIsAlarmChangeModalVisible(false);
+                }}
+                style={{ flex: 1, marginLeft: 6 }}
+              >
+                완료
+              </Button>
+            </SleepButtonContainer>
+          </ModalCard>
+        </ModalOverlay>
+      </Modal>
+
+      {/* 다시 알림 모달 (아침 + 수면정지 이후) */}
+      <Modal
+        visible={isReAlarmModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsReAlarmModalVisible(false)}
+      >
+        <ModalOverlay>
+          <OverlayTouchable
+            activeOpacity={1}
+            onPress={() => setIsReAlarmModalVisible(false)}
+          />
+          <ModalCard>
+            <ModalHeader>
+              <ModalTitle>다시 알림을 설정하시겠습니까?</ModalTitle>
+              <CloseButton
+                onPress={() => setIsReAlarmModalVisible(false)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={24} color={theme.colors.text} />
+              </CloseButton>
+            </ModalHeader>
+
+            <SleepButtonContainer style={{ marginTop: 24 }}>
+              <Button
+                variant="primary"
+                onPress={() => {
+                  setIsReAlarmModalVisible(false);
+                  setIsAlarmChangeModalVisible(true);
+                }}
+              >
+                다시알림
+              </Button>
+            </SleepButtonContainer>
           </ModalCard>
         </ModalOverlay>
       </Modal>
