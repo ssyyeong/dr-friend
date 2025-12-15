@@ -1,11 +1,14 @@
 import React, { useState, useRef, useMemo } from "react";
-import { Animated, View } from "react-native";
+import { Animated, View, TextInput } from "react-native";
 import styled, { useTheme } from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import Svg from "react-native-svg";
 import { Circle } from "react-native-svg";
 import SleepQualityInfoModal from "./components/SleepQualityInfoModal";
+import SleepMemoModal, { sleepMemoOptions } from "./components/SleepMemoModal";
+import SleepDiaryModal from "./components/SleepDiaryModal";
 import SvgIcon from "../../shared/components/common/SvgIcon";
+import Button from "../../shared/components/common/Button";
 
 // =====================
 // Styled Components
@@ -300,6 +303,82 @@ const PlayButton = styled.TouchableOpacity`
   margin-right: 8px;
 `;
 
+// 수면 메모 관련 스타일
+const SleepMemoSection = styled.View`
+  margin-bottom: 24px;
+`;
+
+const SectionHeader = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+`;
+
+const SectionTitle = styled.Text`
+  font-size: 18px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+const AddButton = styled.TouchableOpacity`
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  background-color: ${({ theme }) => theme.colors.gray700};
+  align-items: center;
+  justify-content: center;
+`;
+
+const MemoPillsContainer = styled.View`
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+`;
+
+const MemoPill = styled.View`
+  background-color: rgba(79, 107, 145, 0.24);
+  border-radius: ${({ theme }) => theme.radius.pill}px;
+  padding: 8px 16px;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+`;
+
+const MemoPillText = styled.Text`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+// 수면 일기 관련 스타일
+const SleepDiarySection = styled.View`
+  margin-bottom: 24px;
+`;
+
+const DiaryHeader = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+`;
+
+const EditButton = styled.TouchableOpacity`
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+`;
+
+const DiaryInput = styled.TextInput`
+  background-color: rgba(79, 107, 145, 0.24);
+  border-radius: ${({ theme }) => theme.radius.md}px;
+  padding: 16px;
+  min-height: 120px;
+  font-size: 16px;
+  color: ${({ theme }) => theme.colors.text};
+  text-align-vertical: top;
+`;
+
 // ✅ 가로 구분선 (위/아래 20px)
 const SectionDivider = styled.View`
   height: 1px;
@@ -344,6 +423,69 @@ const AnalysisCellValue = styled.Text`
   color: ${({ theme }) => theme.colors.text};
 `;
 
+// 코칭 관련 스타일
+const CoachingContainer = styled.View`
+  margin-bottom: 40px;
+`;
+
+const CoachingContent = styled.View`
+  padding: 20px;
+  background-color: rgba(79, 107, 145, 0.24);
+  position: relative;
+`;
+
+const QuoteIconLeft = styled.View`
+  position: absolute;
+  top: 55px;
+  left: 15px;
+`;
+
+const QuoteIconRight = styled.View`
+  position: absolute;
+  bottom: 20px;
+  right: 15px;
+`;
+
+const CoachingTitleContainer = styled.View`
+  flex-direction: row;
+  align-items: flex-start;
+  margin-bottom: 12px;
+`;
+
+const CoachingTitle = styled.Text`
+  font-size: 16px;
+  color: ${({ theme }) => theme.colors.secondary};
+`;
+
+const CoachingAdviceContainer = styled.View`
+  position: relative;
+  padding-right: 24px;
+`;
+
+const CoachingAdvice = styled.Text`
+  font-size: 18px;
+  line-height: 28.8px;
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+// 수면 목표 관련 스타일
+const GoalContainer = styled.View`
+  margin-bottom: 40px;
+`;
+
+const GoalMessageContainer = styled.Text`
+  font-size: 20px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.text};
+  margin-bottom: 24px;
+  text-align: center;
+  line-height: 32px;
+`;
+
+const GoalTitleText = styled.Text`
+  color: ${({ theme }) => theme.colors.primary};
+`;
+
 // =====================
 // Component
 // =====================
@@ -356,6 +498,10 @@ const DiaryScreen = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("analysis");
   const [isQualityModalVisible, setIsQualityModalVisible] = useState(false);
+  const [isMemoModalVisible, setIsMemoModalVisible] = useState(false);
+  const [isDiaryModalVisible, setIsDiaryModalVisible] = useState(false);
+  const [selectedMemoOptions, setSelectedMemoOptions] = useState<string[]>([]);
+  const [diaryText, setDiaryText] = useState("");
   const animatedHeight = useRef(new Animated.Value(0)).current;
 
   // 수면 품질 데이터
@@ -814,21 +960,126 @@ const DiaryScreen = () => {
             )}
 
             {activeTab === "diary" && (
-              <Card>
-                <CardTitle>일지 콘텐츠</CardTitle>
-              </Card>
+              <>
+                {/* 수면 메모 섹션 */}
+                <SleepMemoSection>
+                  <SectionHeader>
+                    <SectionTitle>수면 메모</SectionTitle>
+                    <AddButton
+                      onPress={() => setIsMemoModalVisible(true)}
+                      activeOpacity={1}
+                    >
+                      <Ionicons
+                        name="add"
+                        size={20}
+                        color={theme.colors.text}
+                      />
+                    </AddButton>
+                  </SectionHeader>
+                  <MemoPillsContainer>
+                    {selectedMemoOptions.map((optionId) => {
+                      const option = sleepMemoOptions.find(
+                        (opt) => opt.id === optionId
+                      );
+                      if (!option) return null;
+                      return (
+                        <MemoPill key={optionId}>
+                          <SvgIcon
+                            Component={option.icon.default || option.icon}
+                            width={16}
+                            height={16}
+                            fill={theme.colors.text}
+                          />
+                          <MemoPillText>{option.label}</MemoPillText>
+                        </MemoPill>
+                      );
+                    })}
+                  </MemoPillsContainer>
+                </SleepMemoSection>
+
+                {/* 수면 일기 섹션 */}
+                <SleepDiarySection>
+                  <DiaryHeader>
+                    <SectionTitle>수면 일기</SectionTitle>
+                    <EditButton
+                      onPress={() => setIsDiaryModalVisible(true)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons
+                        name="pencil"
+                        size={20}
+                        color={theme.colors.text}
+                      />
+                    </EditButton>
+                  </DiaryHeader>
+                  <DiaryInput
+                    placeholder="오늘 하루 기억에 남는 일을 작성해 보세요."
+                    placeholderTextColor={theme.colors.gray400}
+                    value={diaryText}
+                    onChangeText={setDiaryText}
+                    multiline
+                    editable={false}
+                    pointerEvents="none"
+                  />
+                </SleepDiarySection>
+              </>
             )}
 
             {activeTab === "coaching" && (
-              <Card>
-                <CardTitle>코칭 콘텐츠</CardTitle>
-              </Card>
+              <>
+                <QuoteIconLeft>
+                  <SvgIcon
+                    Component={
+                      require("../../../assets/icon/quote.svg").default ||
+                      require("../../../assets/icon/quote.svg")
+                    }
+                    width={16}
+                    height={16}
+                  />
+                </QuoteIconLeft>
+                <CoachingContainer>
+                  <CoachingContent>
+                    <CoachingTitleContainer>
+                      <CoachingTitle>수면 코칭</CoachingTitle>
+                    </CoachingTitleContainer>
+                    <CoachingAdviceContainer>
+                      <CoachingAdvice>
+                        깊은 잠이 줄어들었습니다.{"\n"}저녁에는 휴대폰 사용을
+                        줄이고, 따뜻한 차로 마음을 안정시켜보세요.
+                      </CoachingAdvice>
+                    </CoachingAdviceContainer>
+                  </CoachingContent>
+                </CoachingContainer>
+                <QuoteIconRight>
+                  <SvgIcon
+                    Component={
+                      require("../../../assets/icon/quote2.svg").default ||
+                      require("../../../assets/icon/quote2.svg")
+                    }
+                    width={16}
+                    height={16}
+                  />
+                </QuoteIconRight>
+              </>
             )}
 
             {activeTab === "goal" && (
-              <Card>
-                <CardTitle>수면 목표 콘텐츠</CardTitle>
-              </Card>
+              <GoalContainer>
+                <GoalMessageContainer>
+                  <GoalTitleText>나에게 맞는 수면 목표</GoalTitleText>를 정하면
+                  {"\n"}더 건강한 하루를 만들 수 있습니다.
+                </GoalMessageContainer>
+
+                <Button
+                  variant="primary"
+                  onPress={() => {
+                    // 수면 목표 설정 화면으로 이동하는 로직
+                    console.log("수면 목표 설정하기");
+                  }}
+                >
+                  수면 목표 설정하기
+                </Button>
+              </GoalContainer>
             )}
           </TabContentContainer>
         </Content>
@@ -838,6 +1089,28 @@ const DiaryScreen = () => {
       <SleepQualityInfoModal
         visible={isQualityModalVisible}
         onClose={() => setIsQualityModalVisible(false)}
+      />
+
+      {/* 수면 메모 모달 */}
+      <SleepMemoModal
+        visible={isMemoModalVisible}
+        onClose={() => setIsMemoModalVisible(false)}
+        title="수면 메모"
+        buttonText="저장"
+        selectedOptions={selectedMemoOptions}
+        onOptionsChange={setSelectedMemoOptions}
+      />
+
+      {/* 수면 일기 모달 */}
+      <SleepDiaryModal
+        visible={isDiaryModalVisible}
+        onClose={() => setIsDiaryModalVisible(false)}
+        title="일기"
+        diaryText={diaryText}
+        onDiaryTextChange={setDiaryText}
+        onSave={() => {
+          // 저장 로직이 필요하면 여기에 추가
+        }}
       />
     </Screen>
   );

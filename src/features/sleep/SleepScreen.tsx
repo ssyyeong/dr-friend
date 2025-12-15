@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ScrollView, Dimensions, Platform, Modal } from "react-native";
+import { ScrollView, Dimensions, Platform } from "react-native";
 import styled, { useTheme } from "styled-components/native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -9,6 +9,7 @@ import Button from "../../shared/components/common/Button";
 import ToggleSwitch from "../../shared/components/common/ToggleSwitch";
 import SvgIcon from "../../shared/components/common/SvgIcon";
 import { SleepStackParamList } from "../../app/navigation/RootNavigator";
+import SleepMemoModal from "../diary/components/SleepMemoModal";
 
 // 웹 환경이 아닐 때만 알림 핸들러 설정
 if (Platform.OS !== "web") {
@@ -142,138 +143,6 @@ const SelectionIndicator = styled.View`
 `;
 
 const ITEM_HEIGHT = 50;
-
-// 취침 전 메모 옵션 데이터
-const sleepMemoOptions = [
-  {
-    id: "bath",
-    label: "따뜻한 목욕",
-    icon: require("../../../assets/icon/bath.svg"),
-  },
-  {
-    id: "drug",
-    label: "수면제",
-    icon: require("../../../assets/icon/drug.svg"),
-  },
-  {
-    id: "alcohol",
-    label: "알코올",
-    icon: require("../../../assets/icon/alcohol.svg"),
-  },
-  {
-    id: "exercise",
-    label: "운동",
-    icon: require("../../../assets/icon/exercise.svg"),
-  },
-  {
-    id: "body",
-    label: "스트레칭",
-    icon: require("../../../assets/icon/body.svg"),
-  },
-  { id: "meal", label: "야식", icon: require("../../../assets/icon/meal.svg") },
-  {
-    id: "stress",
-    label: "스트레스",
-    icon: require("../../../assets/icon/stress.svg"),
-  },
-  {
-    id: "coffee",
-    label: "커피",
-    icon: require("../../../assets/icon/coffee.svg"),
-  },
-  { id: "pain", label: "통증", icon: require("../../../assets/icon/pain.svg") },
-  {
-    id: "sleep",
-    label: "낮잠",
-    icon: require("../../../assets/icon/sleep.svg"),
-  },
-  {
-    id: "relaxation",
-    label: "명상",
-    icon: require("../../../assets/icon/relaxation.svg"),
-  },
-  { id: "band", label: "아픔", icon: require("../../../assets/icon/band.svg") },
-  {
-    id: "weight",
-    label: "과식",
-    icon: require("../../../assets/icon/weight.svg"),
-  },
-];
-
-// 모달 스타일 컴포넌트
-const ModalOverlay = styled.View`
-  flex: 1;
-  background-color: rgba(0, 0, 0, 0.7);
-  justify-content: flex-end;
-`;
-
-const OverlayTouchable = styled.TouchableOpacity`
-  flex: 1;
-`;
-
-const ModalCard = styled.View`
-  width: 100%;
-  background-color: ${({ theme }) => theme.colors.gray800};
-  border-top-left-radius: ${({ theme }) => theme.radius.lg}px;
-  border-top-right-radius: ${({ theme }) => theme.radius.lg}px;
-  padding: 24px;
-  max-height: 90%;
-`;
-
-const ModalHeader = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-`;
-
-const ModalTitle = styled.Text`
-  font-size: 20px;
-  font-weight: 500;
-  color: ${({ theme }) => theme.colors.text};
-`;
-
-const CloseButton = styled.TouchableOpacity`
-  width: 32px;
-  height: 32px;
-  justify-content: center;
-  align-items: center;
-`;
-
-const OptionsGrid = styled.View`
-  flex-direction: row;
-  flex-wrap: wrap;
-  margin-bottom: 32px;
-  justify-content: space-between;
-`;
-
-const OptionButton = styled.TouchableOpacity<{ selected: boolean }>`
-  width: 109px;
-  height: 83px;
-  background-color: ${({ theme }) => theme.colors.gray700};
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  border-width: ${({ selected }) => (selected ? 1 : 0)}px;
-  border-color: ${({ selected, theme }) =>
-    selected ? theme.colors.text : theme.colors.gray300};
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 8px;
-`;
-
-const OptionIconContainer = styled.View<{ selected: boolean }>`
-  width: 20px;
-  height: 20px;
-  margin-bottom: 12px;
-  align-items: center;
-  justify-content: center;
-`;
-
-const OptionLabel = styled.Text<{ selected: boolean }>`
-  font-size: 16px;
-  color: ${({ selected, theme }) =>
-    selected ? theme.colors.text : theme.colors.gray300};
-  text-align: center;
-`;
 
 type SleepScreenNavigationProp = NativeStackNavigationProp<
   SleepStackParamList,
@@ -692,79 +561,18 @@ const SleepScreen = () => {
       </ScrollableContent>
 
       {/* 취침 전 메모 모달 */}
-      <Modal
+      <SleepMemoModal
         visible={isMemoModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setIsMemoModalVisible(false)}
-      >
-        <ModalOverlay>
-          <OverlayTouchable
-            activeOpacity={1}
-            onPress={() => setIsMemoModalVisible(false)}
-          />
-          <ModalCard>
-            <ModalHeader>
-              <ModalTitle>취침 전 메모</ModalTitle>
-              <CloseButton
-                onPress={() => setIsMemoModalVisible(false)}
-                activeOpacity={1}
-              >
-                <Ionicons name="close" size={24} color={theme.colors.text} />
-              </CloseButton>
-            </ModalHeader>
-
-            <OptionsGrid>
-              {sleepMemoOptions.map((option) => {
-                const isSelected = selectedMemoOptions.includes(option.id);
-                return (
-                  <OptionButton
-                    key={option.id}
-                    selected={isSelected}
-                    onPress={() => {
-                      if (isSelected) {
-                        setSelectedMemoOptions(
-                          selectedMemoOptions.filter((id) => id !== option.id)
-                        );
-                      } else {
-                        setSelectedMemoOptions([
-                          ...selectedMemoOptions,
-                          option.id,
-                        ]);
-                      }
-                    }}
-                    activeOpacity={1}
-                  >
-                    <OptionIconContainer selected={isSelected}>
-                      <SvgIcon
-                        Component={option.icon.default || option.icon}
-                        width={20}
-                        height={20}
-                        fill={
-                          isSelected ? theme.colors.text : theme.colors.gray400
-                        }
-                      />
-                    </OptionIconContainer>
-                    <OptionLabel selected={isSelected}>
-                      {option.label}
-                    </OptionLabel>
-                  </OptionButton>
-                );
-              })}
-            </OptionsGrid>
-
-            <Button
-              variant="primary"
-              onPress={() => {
-                setIsMemoModalVisible(false);
-                navigation.navigate("DevicePlace");
-              }}
-            >
-              다음
-            </Button>
-          </ModalCard>
-        </ModalOverlay>
-      </Modal>
+        onClose={() => setIsMemoModalVisible(false)}
+        title="취침 전 메모"
+        buttonText="다음"
+        selectedOptions={selectedMemoOptions}
+        onOptionsChange={setSelectedMemoOptions}
+        onButtonPress={() => {
+          setIsMemoModalVisible(false);
+          navigation.navigate("DevicePlace");
+        }}
+      />
     </Screen>
   );
 };
