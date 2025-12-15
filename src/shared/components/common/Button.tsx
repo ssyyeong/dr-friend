@@ -23,7 +23,7 @@ const GhostButton = styled(PrimaryButton)`
 `;
 
 const BlockButton = styled(PrimaryButton)`
-  background-color: ${({ theme }) => theme.colors.gray900};
+  background-color: ${({ theme }) => theme.colors.gray500};
 `;
 
 const GradientButtonContainer = styled.View`
@@ -45,7 +45,7 @@ const Label = styled.Text`
 `;
 
 const BlockLabel = styled(Label)`
-  color: ${({ theme }) => theme.colors.gray700};
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const Button: React.FC<ButtonProps> = ({
