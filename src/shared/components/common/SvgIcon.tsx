@@ -20,13 +20,15 @@ const SvgIcon: React.FC<SvgIconProps> = ({
   const renderWithFill = (element: React.ReactElement): React.ReactElement => {
     if (!fill) return element;
 
+    const elementProps = element.props as Record<string, any>;
+
     return React.cloneElement(
       element,
       {
-        ...element.props,
+        ...elementProps,
         fill: fill,
-      },
-      React.Children.map(element.props.children, (child) => {
+      } as any,
+      React.Children.map(elementProps.children, (child) => {
         if (React.isValidElement(child)) {
           return renderWithFill(child);
         }
@@ -50,15 +52,3 @@ const SvgIcon: React.FC<SvgIconProps> = ({
 };
 
 export default SvgIcon;
-
-
-
-
-
-
-
-
-
-
-
-
