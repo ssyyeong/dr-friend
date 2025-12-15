@@ -124,4 +124,3 @@ const SleepDiaryModal: React.FC<SleepDiaryModalProps> = ({
 };
 
 export default SleepDiaryModal;
-
