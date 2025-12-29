@@ -4,6 +4,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { AuthStackParamList } from "../../../app/navigation/RootNavigator";
 import Button from "../../../shared/components/common/Button";
+import RoundCheckSvg from "../../../../assets/icon/round-check.svg";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "SignupSuccess">;
 
@@ -24,11 +25,10 @@ const Content = styled.View`
   width: 100%;
 `;
 
-const CheckIcon = styled.Image`
+const CheckIconContainer = styled.View`
   margin-bottom: 36px;
-  width: 100px;
-  height: 100px;
-  resize-mode: contain;
+  align-items: center;
+  justify-content: center;
 `;
 
 const Title = styled.Text`
@@ -44,10 +44,13 @@ const Description = styled.Text`
 `;
 
 const ButtonContainer = styled.View`
+  position: absolute;
+  bottom: 50;
+  left: 0;
+  right: 0;
   width: 100%;
-  margin-bottom: 24px;
-  padding-left: 16px;
-  padding-right: 16px;
+  padding: 16px;
+  background-color: transparent;
 `;
 
 const SignUpSuccessScreen: React.FC<Props> = ({ navigation }) => {
@@ -63,10 +66,9 @@ const SignUpSuccessScreen: React.FC<Props> = ({ navigation }) => {
     >
       <Screen>
         <Content>
-          <CheckIcon
-            source={require("../../../../assets/icon/round-check.svg")}
-            resizeMode="contain"
-          />
+          <CheckIconContainer>
+            <RoundCheckSvg width={100} height={100} />
+          </CheckIconContainer>
           <Title>회원가입 완료</Title>
           <Description>가입이 완료되었습니다.</Description>
         </Content>

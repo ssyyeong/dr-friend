@@ -8,10 +8,9 @@ import * as Notifications from "expo-notifications";
 import Button from "../../shared/components/common/Button";
 import SvgIcon from "../../shared/components/common/SvgIcon";
 import { SleepStackParamList } from "../../app/navigation/RootNavigator";
-
-// 배경 컴포넌트를 컴포넌트 외부에서 로드하여 재생성 방지
-const MorningBackground = require("../../../assets/image/alarm-morning-background.svg");
-const NightBackground = require("../../../assets/image/alarm-night-background.svg");
+import MorningBackground from "../../../assets/image/alarm-morning-background.svg";
+import NightBackground from "../../../assets/image/alarm-night-background.svg";
+import MoonSvg from "../../../assets/icon/moon.svg";
 
 // 웹 환경이 아닐 때만 알림 핸들러 설정
 if (Platform.OS !== "web") {
@@ -303,9 +302,7 @@ const SleepScreen = () => {
 
   // 배경 컴포넌트를 한 번만 결정하여 고정
   const BackgroundSvgComponent = useMemo(
-    () =>
-      (isMorning ? MorningBackground : NightBackground).default ||
-      (isMorning ? MorningBackground : NightBackground),
+    () => (isMorning ? MorningBackground : NightBackground),
     [isMorning]
   );
 
@@ -646,11 +643,7 @@ const SleepScreen = () => {
       <ScrollableContent showsVerticalScrollIndicator={false}>
         <Content>
           <MoonIconContainer>
-            {React.createElement(
-              require("../../../assets/icon/moon.svg").default ||
-                require("../../../assets/icon/moon.svg"),
-              { width: 100, height: 100 }
-            )}
+            <MoonSvg width={100} height={100} />
           </MoonIconContainer>
 
           <CurrentTime>{currentTimeFormatted.time}</CurrentTime>

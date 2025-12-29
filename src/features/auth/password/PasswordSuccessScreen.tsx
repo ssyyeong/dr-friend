@@ -4,6 +4,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { AuthStackParamList } from "../../../app/navigation/RootNavigator";
 import Button from "../../../shared/components/common/Button";
+import RoundCheckSvg from "../../../../assets/icon/round-check.svg";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "PasswordSuccess">;
 
@@ -24,11 +25,10 @@ const Content = styled.View`
   width: 100%;
 `;
 
-const CheckIcon = styled.Image`
+const CheckIconContainer = styled.View`
   margin-bottom: 36px;
-  width: 100px;
-  height: 100px;
-  resize-mode: contain;
+  align-items: center;
+  justify-content: center;
 `;
 
 const Title = styled.Text`
@@ -63,10 +63,9 @@ const PasswordSuccessScreen: React.FC<Props> = ({ navigation }) => {
     >
       <Screen>
         <Content>
-          <CheckIcon
-            source={require("../../../../assets/icon/round-check.svg")}
-            resizeMode="contain"
-          />
+          <CheckIconContainer>
+            <RoundCheckSvg width={100} height={100} />
+          </CheckIconContainer>
           <Title>비밀번호 재설정 완료</Title>
           <Description>
             비밀번호가 변경 되었습니다.{`\n`}로그인 해주세요.

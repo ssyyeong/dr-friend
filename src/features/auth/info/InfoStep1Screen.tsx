@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { Image } from "react-native";
 import styled from "styled-components/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
@@ -7,6 +6,8 @@ import { AuthStackParamList } from "../../../app/navigation/RootNavigator";
 import Button from "../../../shared/components/common/Button";
 import ProgressIndicator from "./ProgressIndicator";
 import { Ionicons } from "@expo/vector-icons";
+import PrimaryCheckSvg from "../../../../assets/icon/primary-check.svg";
+import GrayCheckSvg from "../../../../assets/icon/gray-check.svg";
 type Props = NativeStackScreenProps<AuthStackParamList, "InfoStep1">;
 
 const GradientBackground = styled(LinearGradient)`
@@ -98,15 +99,9 @@ const InfoStep1Screen: React.FC<Props> = ({ navigation }) => {
             >
               <OptionText>{option}</OptionText>
               {selectedOptions.includes(option) ? (
-                <Image
-                  source={require("../../../../assets/icon/primary-check.svg")}
-                  resizeMode="contain"
-                />
+                <PrimaryCheckSvg width={24} height={24} />
               ) : (
-                <Image
-                  source={require("../../../../assets/icon/gray-check.svg")}
-                  resizeMode="contain"
-                />
+                <GrayCheckSvg width={24} height={24} />
               )}
             </OptionButton>
           ))}

@@ -2,8 +2,14 @@ import React, { useState } from "react";
 import styled from "styled-components/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
+import { ScrollView } from "react-native";
 import { AuthStackParamList } from "../../../app/navigation/RootNavigator";
 import Button from "../../../shared/components/common/Button";
+import AppMemberController from "../../../services/AppMemberController";
+import PrimaryBoxCheckSvg from "../../../../assets/icon/primary-box-check.svg";
+import GrayBoxCheckSvg from "../../../../assets/icon/gray-box-check.svg";
+import PrimaryCheckSvg from "../../../../assets/icon/primary-check.svg";
+import GrayCheckSvg from "../../../../assets/icon/gray-check.svg";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Signup">;
 
@@ -13,8 +19,16 @@ const GradientBackground = styled(LinearGradient)`
 
 const Screen = styled.SafeAreaView`
   flex: 1;
+`;
+
+const ScrollContainer = styled(ScrollView)`
+  flex: 1;
+`;
+
+const ScrollContent = styled.View`
   padding: 24px 16px;
   align-items: center;
+  padding-bottom: 100px;
 `;
 
 const Content = styled.View`
@@ -49,6 +63,7 @@ const PhoneInputContainer = styled.View`
 const PhoneInput = styled(Input)`
   margin-right: 8px;
   margin-bottom: 0;
+  flex: 1;
 `;
 
 const VerifyButton = styled.TouchableOpacity`
@@ -88,10 +103,12 @@ const AgreementItemLast = styled(AgreementItem)`
   margin-bottom: 0;
 `;
 
-const CheckboxImage = styled.Image`
+const CheckboxContainer = styled.View`
   width: 20px;
   height: 20px;
   margin-right: 12px;
+  align-items: center;
+  justify-content: center;
 `;
 
 const AllAgreementText = styled.Text`
@@ -114,10 +131,13 @@ const RequiredText = styled.Text`
 `;
 
 const ButtonContainer = styled.View`
+  position: absolute;
+  bottom: 50;
+  left: 0;
+  right: 0;
   width: 100%;
-  margin-bottom: 24px;
-  padding-left: 16px;
-  padding-right: 16px;
+  padding: 16px;
+  background-color: transparent;
 `;
 
 const SignupScreen: React.FC<Props> = ({ navigation }) => {
@@ -130,6 +150,12 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
   const [agreeTerms, setAgreeTerms] = useState(true);
   const [agreePrivacy, setAgreePrivacy] = useState(true);
 
+  // 본인 인증 상태
+  const [isVerificationSent, setIsVerificationSent] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [verifyCode, setVerifyCode] = useState("");
+
   const handleAgreeAll = () => {
     const newValue = !agreeAll;
     setAgreeAll(newValue);
@@ -137,14 +163,135 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
     setAgreePrivacy(newValue);
   };
 
-  const handleVerifyIdentity = () => {
-    // TODO: 본인 인증 로직
+  // 인증번호 전송
+  const handleSendVerificationCode = async () => {
+    // 전화번호 유효성 검사
+    if (!phoneNumber || phoneNumber.trim() === "") {
+      console.warn("전화번호를 입력해주세요.");
+      // TODO: 사용자에게 알림 표시 (Alert 또는 Toast)
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      console.log("=== 인증번호 전송 요청 시작 ===");
+      console.log("전화번호:", phoneNumber);
+
+      const controller = new AppMemberController({
+        modelName: "AppMember",
+        modelId: "app_member",
+      });
+
+      const response = await controller.sendPhoneNumberVerificationCode({
+        TARGET_PHONE_NUMBER: phoneNumber,
+      });
+
+      if (response?.status === 200) {
+        console.log("인증번호 전송 성공");
+        setIsVerificationSent(true);
+        setVerificationCode(""); // 인증번호 입력란 초기화
+        setVerifyCode(response?.data?.result);
+        // TODO: 성공 메시지 표시 및 타이머 시작
+      } else {
+        console.warn("예상치 못한 응답 상태:", response?.status);
+      }
+    } catch (error: any) {
+      console.error("인증번호 전송 실패:", {
+        message: error?.message,
+        response: error?.response,
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+
+      // TODO: 사용자에게 에러 메시지 표시 (Alert 또는 Toast)
+      if (error?.response) {
+        console.error("서버 에러:", error.response.data);
+      } else if (error?.request) {
+        console.error("네트워크 에러: 서버에 연결할 수 없습니다.");
+      } else {
+        console.error("요청 설정 에러:", error.message);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSignup = () => {
-    // TODO: 실제 회원가입 API 호출
-    // 성공 시 SignupSuccess 화면으로 이동
-    navigation.navigate("SignupSuccess");
+  // 인증번호 검증
+  const handleVerifyCode = async () => {
+    if (!verificationCode || verificationCode.trim() === "") {
+      console.warn("인증번호를 입력해주세요.");
+      // TODO: 사용자에게 알림 표시
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      console.log("=== 인증번호 검증 요청 시작 ===");
+      console.log("전화번호:", phoneNumber);
+      console.log("인증번호:", verificationCode);
+
+      const controller = new AppMemberController({
+        modelName: "AppMember",
+        modelId: "app_member",
+      });
+
+      const response = await controller.verifyPhoneVerificationCode({
+        ENCRYPTED_AUTH_CODE: verifyCode,
+        AUTH_CODE: verificationCode,
+      });
+
+      if (response?.status === 200) {
+        console.log("인증 완료");
+        setIsVerified(true);
+        // TODO: 성공 메시지 표시
+      } else {
+        console.warn("인증 실패:", response?.status);
+        // TODO: 에러 메시지 표시
+      }
+    } catch (error: any) {
+      console.error("요청 설정 에러:", error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 본인 인증 버튼 핸들러
+  const handleVerifyIdentity = () => {
+    if (isVerified) {
+      return; // 이미 인증 완료
+    }
+
+    if (isVerificationSent) {
+      // 인증번호 검증
+      handleVerifyCode();
+    } else {
+      // 인증번호 전송
+      handleSendVerificationCode();
+    }
+  };
+
+  const handleSignup = async () => {
+    console.log("handleSignup", isVerified);
+    if (isVerified) {
+      const controller = new AppMemberController({
+        modelName: "AppMember",
+        modelId: "app_member",
+      });
+
+      const response = await controller.signUp({
+        USER_NAME: email,
+        PASSWORD: password,
+        PHONE_NUMBER: phoneNumber,
+      });
+      if (response?.status === 200) {
+        console.log("회원가입 성공");
+        navigation.navigate("SignupSuccess");
+      } else {
+        console.warn("회원가입 실패:", response?.status);
+      }
+    } else {
+      console.warn("인증이 완료되지 않았습니다.");
+    }
   };
 
   return (
@@ -154,108 +301,132 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
       end={{ x: 0, y: 1 }}
     >
       <Screen>
-        <Content>
-          <Title>회원가입</Title>
-          <Input
-            placeholder="이메일"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+        <ScrollContainer
+          contentContainerStyle={{ flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <ScrollContent>
+            <Content>
+              <Title>회원가입</Title>
+              <Input
+                placeholder="이메일"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
 
-          <Input
-            placeholder="비밀번호"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+              <Input
+                placeholder="비밀번호"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
 
-          <Input
-            placeholder="비밀번호 재입력"
-            value={passwordConfirm}
-            onChangeText={setPasswordConfirm}
-            secureTextEntry
-          />
+              <Input
+                placeholder="비밀번호 재입력"
+                value={passwordConfirm}
+                onChangeText={setPasswordConfirm}
+                secureTextEntry
+              />
 
-          <PhoneInputContainer>
-            <PhoneInput
-              placeholder="휴대폰 번호"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              keyboardType="phone-pad"
-            />
-            <VerifyButton onPress={handleVerifyIdentity}>
-              <VerifyButtonText>본인 인증</VerifyButtonText>
-            </VerifyButton>
-          </PhoneInputContainer>
-
-          <Input
-            placeholder="인증번호"
-            value={verificationCode}
-            onChangeText={setVerificationCode}
-            keyboardType="number-pad"
-          />
-
-          <AgreementContainer>
-            <AgreementAll onPress={handleAgreeAll}>
-              {agreeAll ? (
-                <CheckboxImage
-                  source={require("../../../../assets/icon/primary-box-check.svg")}
-                  resizeMode="contain"
+              <PhoneInputContainer>
+                <PhoneInput
+                  placeholder="휴대폰 번호"
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  keyboardType="phone-pad"
+                  editable={!isVerified} // 인증 완료 시 수정 불가
                 />
-              ) : (
-                <CheckboxImage
-                  source={require("../../../../assets/icon/gray-box-check.svg")}
-                  resizeMode="contain"
-                />
-              )}
-              <AllAgreementText>모두 동의</AllAgreementText>
-            </AgreementAll>
+                <VerifyButton
+                  onPress={handleVerifyIdentity}
+                  disabled={isLoading || isVerified}
+                  style={{ opacity: isLoading || isVerified ? 0.5 : 1 }}
+                >
+                  <VerifyButtonText>
+                    {isVerified
+                      ? "인증완료"
+                      : isVerificationSent
+                      ? "인증하기"
+                      : "본인 인증"}
+                  </VerifyButtonText>
+                </VerifyButton>
+              </PhoneInputContainer>
 
-            <AgreementItem onPress={() => setAgreeTerms(!agreeTerms)}>
-              {agreeTerms ? (
-                <CheckboxImage
-                  source={require("../../../../assets/icon/primary-check.svg")}
-                  resizeMode="contain"
-                />
-              ) : (
-                <CheckboxImage
-                  source={require("../../../../assets/icon/gray-check.svg")}
-                  resizeMode="contain"
+              {isVerificationSent && !isVerified && (
+                <Input
+                  placeholder="인증번호"
+                  value={verificationCode}
+                  onChangeText={setVerificationCode}
+                  keyboardType="number-pad"
+                  autoFocus
                 />
               )}
-              <AgreementText>
-                이용약관에 동의합니다.
-                <RequiredText>(필수)</RequiredText>
-              </AgreementText>
-            </AgreementItem>
 
-            <AgreementItemLast onPress={() => setAgreePrivacy(!agreePrivacy)}>
-              {agreePrivacy ? (
-                <CheckboxImage
-                  source={require("../../../../assets/icon/primary-check.svg")}
-                  resizeMode="contain"
-                />
-              ) : (
-                <CheckboxImage
-                  source={require("../../../../assets/icon/gray-check.svg")}
-                  resizeMode="contain"
+              {isVerified && (
+                <Input
+                  placeholder="인증완료"
+                  value="인증이 완료되었습니다"
+                  editable={false}
+                  style={{
+                    backgroundColor: "rgba(115, 83, 255, 0.2)",
+                    borderWidth: 1,
+                    borderColor: "#7353FF",
+                  }}
                 />
               )}
-              <AgreementText>
-                개인정보 수집 및 이용에 동의합니다.
-                <RequiredText>(필수)</RequiredText>
-              </AgreementText>
-            </AgreementItemLast>
-          </AgreementContainer>
-        </Content>
+
+              <AgreementContainer>
+                <AgreementAll onPress={handleAgreeAll}>
+                  <CheckboxContainer>
+                    {agreeAll ? (
+                      <PrimaryBoxCheckSvg width={20} height={20} />
+                    ) : (
+                      <GrayBoxCheckSvg width={20} height={20} />
+                    )}
+                  </CheckboxContainer>
+                  <AllAgreementText>모두 동의</AllAgreementText>
+                </AgreementAll>
+
+                <AgreementItem onPress={() => setAgreeTerms(!agreeTerms)}>
+                  <CheckboxContainer>
+                    {agreeTerms ? (
+                      <PrimaryCheckSvg width={20} height={20} />
+                    ) : (
+                      <GrayCheckSvg width={20} height={20} />
+                    )}
+                  </CheckboxContainer>
+                  <AgreementText>
+                    이용약관에 동의합니다.
+                    <RequiredText>(필수)</RequiredText>
+                  </AgreementText>
+                </AgreementItem>
+
+                <AgreementItemLast
+                  onPress={() => setAgreePrivacy(!agreePrivacy)}
+                >
+                  <CheckboxContainer>
+                    {agreePrivacy ? (
+                      <PrimaryCheckSvg width={20} height={20} />
+                    ) : (
+                      <GrayCheckSvg width={20} height={20} />
+                    )}
+                  </CheckboxContainer>
+                  <AgreementText>
+                    개인정보 수집 및 이용에 동의합니다.
+                    <RequiredText>(필수)</RequiredText>
+                  </AgreementText>
+                </AgreementItemLast>
+              </AgreementContainer>
+            </Content>
+          </ScrollContent>
+        </ScrollContainer>
+        <ButtonContainer>
+          <Button variant="primary" onPress={handleSignup}>
+            회원가입
+          </Button>
+        </ButtonContainer>
       </Screen>
-      <ButtonContainer>
-        <Button variant="primary" onPress={handleSignup}>
-          회원가입
-        </Button>
-      </ButtonContainer>
     </GradientBackground>
   );
 };

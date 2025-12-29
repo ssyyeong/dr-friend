@@ -1,14 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import styled from "styled-components/native";
 import Button from "../../shared/components/common/Button";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { SleepStackParamList } from "../../app/navigation/RootNavigator";
-
-// SVG 컴포넌트를 컴포넌트 외부에서 미리 로드
-const DevicePlacementSvg =
-  require("../../../assets/image/device-placement.svg").default ||
-  require("../../../assets/image/device-placement.svg");
+import DevicePlacementSvg from "../../../assets/image/device-placement.svg";
 
 type SleepScreenNavigationProp = NativeStackNavigationProp<
   SleepStackParamList,
@@ -56,27 +52,13 @@ const ButtonContainer = styled.View`
 
 const DevicePlaceScreen = () => {
   const navigation = useNavigation<SleepScreenNavigationProp>();
-  const [isSvgReady, setIsSvgReady] = useState(false);
-
-  useEffect(() => {
-    // SVG가 로드될 때까지 약간의 지연을 두어 안정적으로 렌더링
-    const timer = setTimeout(() => {
-      setIsSvgReady(true);
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   return (
     <Screen>
       <Content>
         <IllustrationContainer>
           <CircularImageWrapper>
-            {isSvgReady &&
-              React.createElement(DevicePlacementSvg, {
-                width: 240,
-                height: 240,
-              })}
+            <DevicePlacementSvg width={240} height={240} />
           </CircularImageWrapper>
           <InstructionText>
             예시와 같이 기기를 배치합니다. {"\n"} 충전기는 연결 상태로 둡니다.

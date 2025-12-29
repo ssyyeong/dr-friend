@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Image, Dimensions } from "react-native";
+import { Dimensions } from "react-native";
 import styled, { useTheme } from "styled-components/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
@@ -7,6 +7,8 @@ import { BlurView } from "expo-blur";
 import { AuthStackParamList } from "../../../app/navigation/RootNavigator";
 import Button from "../../../shared/components/common/Button";
 import { Ionicons } from "@expo/vector-icons";
+import SelfTestBackgroundSvg from "../../../../assets/image/self-test-background.svg";
+import MessageSvg from "../../../../assets/icon/message.svg";
 import Svg, {
   Text,
   Defs,
@@ -20,7 +22,17 @@ const Screen = styled.SafeAreaView`
   flex: 1;
 `;
 
-const BackgroundImage = styled.ImageBackground`
+const BackgroundContainer = styled.View`
+  width: 100%;
+  min-height: 812px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+`;
+
+const BackgroundContent = styled.View`
   width: 100%;
   min-height: 812px;
   justify-content: center;
@@ -138,10 +150,14 @@ const SelfTestScreen: React.FC<Props> = ({ navigation }) => {
         contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
       >
-        <BackgroundImage
-          source={require("../../../../assets/image/self-test-background.svg")}
-          resizeMode="cover"
-        >
+        <BackgroundContent>
+          <BackgroundContainer>
+            <SelfTestBackgroundSvg
+              width={Dimensions.get("window").width}
+              height={812}
+              preserveAspectRatio="xMidYMid slice"
+            />
+          </BackgroundContainer>
           <InnerContent>
             <MainTitleContainer>
               <GradientTextContainer>
@@ -191,9 +207,9 @@ const SelfTestScreen: React.FC<Props> = ({ navigation }) => {
                   start={{ x: 0, y: 0 }}
                   end={{ x: 0, y: 1 }}
                 >
-                  <Image
-                    source={require("../../../../assets/icon/message.svg")}
-                    resizeMode="contain"
+                  <MessageSvg
+                    width={24}
+                    height={24}
                     style={{ marginBottom: 12 }}
                   />
                   <InfoText>
@@ -205,7 +221,7 @@ const SelfTestScreen: React.FC<Props> = ({ navigation }) => {
               </InfoBoxBlur>
             </InfoBoxContainer>
           </InnerContent>
-        </BackgroundImage>
+        </BackgroundContent>
 
         <Content>
           <NotesContainer>
