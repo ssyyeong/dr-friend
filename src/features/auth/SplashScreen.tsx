@@ -39,6 +39,7 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
       try {
         // 로그인 상태 확인
         const loggedIn = await isLoggedIn();
+        console.log("loggedIn", loggedIn);
 
         // 1.5초 후 로그인 상태에 따라 화면 이동
         setTimeout(() => {

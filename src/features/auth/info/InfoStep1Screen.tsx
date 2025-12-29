@@ -50,7 +50,16 @@ const OptionText = styled.Text`
   color: ${({ theme }) => theme.colors.text};
 `;
 
-const InfoStep1Screen: React.FC<Props> = ({ navigation }) => {
+const ButtonContainer = styled.View`
+  position: absolute;
+  bottom: 50;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background-color: transparent;
+`;
+
+const InfoStep1Screen: React.FC<Props> = ({ navigation, route }) => {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
   const options = [
@@ -71,7 +80,10 @@ const InfoStep1Screen: React.FC<Props> = ({ navigation }) => {
 
   const handleNext = () => {
     if (selectedOptions.length > 0) {
-      navigation.navigate("InfoStep2", { step1Data: selectedOptions });
+      navigation.navigate("InfoStep2", {
+        id: route?.params?.id,
+        step1Data: selectedOptions,
+      });
     }
   };
 
@@ -107,13 +119,15 @@ const InfoStep1Screen: React.FC<Props> = ({ navigation }) => {
           ))}
         </Content>
 
-        <Button
-          variant={selectedOptions.length === 0 ? "block" : "primary"}
-          onPress={handleNext}
-          disabled={selectedOptions.length === 0}
-        >
-          다음
-        </Button>
+        <ButtonContainer>
+          <Button
+            variant={selectedOptions.length === 0 ? "block" : "primary"}
+            onPress={handleNext}
+            disabled={selectedOptions.length === 0}
+          >
+            다음
+          </Button>
+        </ButtonContainer>
       </Screen>
     </GradientBackground>
   );

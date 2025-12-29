@@ -6,10 +6,11 @@ import { AuthStackParamList } from "../../app/navigation/RootNavigator";
 import { RootStackParamList } from "../../app/navigation/RootNavigator";
 import Button from "../../shared/components/common/Button";
 import SocialButton from "../../shared/components/common/SocialButton";
-import { saveToken } from "../../services/authService";
+import { saveMemberId, saveToken } from "../../services/authService";
 import LogoSvg from "../../../assets/logo/logo.svg";
 import AppleLogoSvg from "../../../assets/logo/apple.svg";
 import GoogleLogoSvg from "../../../assets/logo/google.svg";
+import AppMemberController from "../../services/AppMemberController";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Login"> & {
   // RootStack 네비도 써야해서 any 피하려고 추가
@@ -97,19 +98,32 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleLogin = async () => {
     try {
+      const controller = new AppMemberController({
+        modelName: "AppMember",
+        modelId: "app_member",
+      });
+
+      const response = await controller.signIn({
+        USER_NAME: email,
+        PASSWORD: password,
+      });
+      console.log(
+        "response",
+        response?.data?.result?.user?.APP_MEMBER_IDENTIFICATION_CODE
+      );
+
       // TODO: 여기서 실제 로그인 API 호출 예정
       // const response = await loginAPI(email, password);
       // const token = response.data.token;
 
-      // 임시: 실제 API 연결 전까지는 테스트용 토큰 사용
-      // 실제 API 연결 시 아래 주석 처리하고 위의 response.data.token 사용
-      const mockToken = "mock_token_" + Date.now();
-
       // 로그인 성공 시 토큰 저장
-      await saveToken(mockToken);
-
+      if (response?.status === 200) {
+        await saveMemberId(
+          response?.data?.result?.user?.APP_MEMBER_IDENTIFICATION_CODE
+        );
+        (navigation as any).getParent()?.navigate("MainTab");
+      }
       // 로그인 성공하면 RootStack의 MainTab으로 이동
-      (navigation as any).getParent()?.navigate("MainTab");
     } catch (error) {
       console.error("로그인 실패:", error);
       // TODO: 에러 메시지 표시 (예: Alert 또는 Toast)
@@ -205,7 +219,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             <DividerLine />
           </DividerContainer>
 
-          <SocialButton
+          {/* <SocialButton
             icon={AppleLogoSvg}
             label="Apple로 로그인하기"
             onPress={handleAppleLogin}
@@ -215,7 +229,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             icon={GoogleLogoSvg}
             label="Google로 로그인하기"
             onPress={handleGoogleLogin}
-          />
+          /> */}
         </Content>
       </Screen>
     </GradientBackground>

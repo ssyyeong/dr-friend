@@ -43,6 +43,9 @@ import InfoStep3Screen from "../../features/auth/info/InfoStep3Screen";
 import InfoStep4Screen from "../../features/auth/info/InfoStep4Screen";
 
 import SelfTestScreen from "../../features/auth/selftest/SelfTestScreen";
+import SurveyQuestionScreen from "../../features/auth/selftest/SurveyQuestionScreen";
+import SurveyResultScreen from "../../features/auth/selftest/SurveyResultScreen";
+import CustomRoutineScreen from "../../features/auth/selftest/CustomRoutineScreen";
 export type RootStackParamList = {
   Splash: undefined;
   Auth: undefined;
@@ -52,16 +55,24 @@ export type RootStackParamList = {
 export type AuthStackParamList = {
   Login: undefined;
   Signup: undefined;
-  SignupSuccess: undefined;
+  SignupSuccess: { id?: string };
   Password: undefined;
   PasswordAuth: { email: string };
   PasswordChange: undefined;
   PasswordSuccess: undefined;
-  InfoStep1: undefined;
-  InfoStep2: { step1Data: string[] };
-  InfoStep3: { step1Data: string[]; step2Data: any };
-  InfoStep4: { step1Data: string[]; step2Data: any; step3Data: any };
-  SelfTest: undefined;
+  InfoStep1: { id?: string };
+  InfoStep2: { id?: string; step1Data: string[] };
+  InfoStep3: { id?: string; step1Data: string[]; step2Data: any };
+  InfoStep4: {
+    id?: string;
+    step1Data: string[];
+    step2Data: any;
+    step3Data: any;
+  };
+  SelfTest: { id?: string };
+  SurveyQuestion: { id?: string };
+  SurveyResult: { result: any };
+  CustomRoutine: { result: any };
 };
 
 export type SleepStackParamList = {
@@ -128,6 +139,12 @@ const AuthStackNavigator = () => {
       <AuthStack.Screen name="InfoStep3" component={InfoStep3Screen} />
       <AuthStack.Screen name="InfoStep4" component={InfoStep4Screen} />
       <AuthStack.Screen name="SelfTest" component={SelfTestScreen} />
+      <AuthStack.Screen
+        name="SurveyQuestion"
+        component={SurveyQuestionScreen}
+      />
+      <AuthStack.Screen name="SurveyResult" component={SurveyResultScreen} />
+      <AuthStack.Screen name="CustomRoutine" component={CustomRoutineScreen} />
     </AuthStack.Navigator>
   );
 };

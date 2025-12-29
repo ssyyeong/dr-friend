@@ -6,6 +6,7 @@ import { AuthStackParamList } from "../../../app/navigation/RootNavigator";
 import Button from "../../../shared/components/common/Button";
 import ToggleSwitch from "../../../shared/components/common/ToggleSwitch";
 import ProgressIndicator from "./ProgressIndicator";
+import Controller from "../../../services/controller";
 type Props = NativeStackScreenProps<AuthStackParamList, "InfoStep4">;
 
 const GradientBackground = styled(LinearGradient)`
@@ -72,7 +73,12 @@ const SetLaterText = styled.Text`
 `;
 
 const ButtonContainer = styled.View`
-  width: 100%;
+  position: absolute;
+  bottom: 50;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background-color: transparent;
 `;
 
 const InfoStep4Screen: React.FC<Props> = ({ route, navigation }) => {
@@ -80,16 +86,33 @@ const InfoStep4Screen: React.FC<Props> = ({ route, navigation }) => {
   const [microphoneEnabled, setMicrophoneEnabled] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
-  const handleSetLater = () => {
-    // 나중에 설정 - 다음 단계로 이동
-    // TODO: 실제 다음 단계로 변경 필요
-    navigation.navigate("SelfTest");
+  const updateUserInfo = async () => {
+    const controller = new Controller({
+      modelName: "AppMember",
+      modelId: "app_member",
+    });
+
+    const response = await controller.update({
+      APP_MEMBER_IDENTIFICATION_CODE: route.params.id,
+      PURPOSE_LIST: JSON.stringify(route.params.step1Data),
+      GENDER: route.params.step2Data.gender === "남성" ? "M" : "F",
+      WEIGHT: route.params.step2Data.weight || 0,
+      HEIGHT: route.params.step2Data.height || 0,
+      BIRTH: route.params.step2Data.birthday || "",
+      MICROPHONE_ENABLED: microphoneEnabled ? "Y" : "N",
+      NOTIFICATIONS_ENABLED: notificationsEnabled ? "Y" : "N",
+    });
+  };
+  const handleSetLater = async () => {
+    await updateUserInfo();
+    navigation.navigate("SelfTest", { id: route.params.id });
   };
 
-  const handleAllowAll = () => {
+  const handleAllowAll = async () => {
     setMicrophoneEnabled(true);
     setNotificationsEnabled(true);
-    // TODO: 실제 권한 요청 로직 및 다음 단계로 이동
+    await updateUserInfo();
+    navigation.navigate("SelfTest", { id: route.params.id });
   };
 
   return (
@@ -101,7 +124,6 @@ const InfoStep4Screen: React.FC<Props> = ({ route, navigation }) => {
       <Screen>
         <Content>
           <ProgressIndicator currentStep={4} />
-
           <ScrollableContent showsVerticalScrollIndicator={false}>
             <Title>
               앱의 원활한 활용을 위해{"\n"}
@@ -138,10 +160,10 @@ const InfoStep4Screen: React.FC<Props> = ({ route, navigation }) => {
           </ScrollableContent>
         </Content>
 
-        <SetLaterLink onPress={handleSetLater}>
-          <SetLaterText>나중에 설정</SetLaterText>
-        </SetLaterLink>
         <ButtonContainer>
+          <SetLaterLink onPress={handleSetLater}>
+            <SetLaterText>나중에 설정</SetLaterText>
+          </SetLaterLink>
           <Button variant="primary" onPress={handleAllowAll}>
             모두 허용
           </Button>

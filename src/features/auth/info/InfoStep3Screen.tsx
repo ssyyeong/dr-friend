@@ -84,7 +84,7 @@ const ProductText = styled.Text`
 
 const SetLaterLink = styled.TouchableOpacity`
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 5px;
 `;
 
 const SetLaterText = styled.Text`
@@ -94,8 +94,12 @@ const SetLaterText = styled.Text`
 `;
 
 const ButtonContainer = styled.View`
-  width: 100%;
-  padding-top: 24px;
+  position: absolute;
+  bottom: 50;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background-color: transparent;
 `;
 
 const InfoStep3Screen: React.FC<Props> = ({ route, navigation }) => {
@@ -134,10 +138,14 @@ const InfoStep3Screen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const handleSetLater = () => {
-    // 나중에 설정 - 다음 단계로 이동 (임시로 InfoStep2로 이동)
-    // TODO: 실제 다음 단계로 변경 필요
-    navigation.navigate("InfoStep2", {
+    navigation.navigate("InfoStep4", {
+      id: route.params.id,
       step1Data: route.params.step1Data,
+      step2Data: route.params.step2Data,
+      step3Data: {
+        type: selectedType,
+        products: selectedType === "owned" ? selectedProducts : [],
+      },
     });
   };
 
@@ -149,6 +157,7 @@ const InfoStep3Screen: React.FC<Props> = ({ route, navigation }) => {
       };
       // TODO: 실제 다음 단계로 이동하도록 변경 필요
       navigation.navigate("InfoStep4", {
+        id: route.params.id,
         step1Data: route.params.step1Data,
         step2Data: route.params.step2Data,
         step3Data,

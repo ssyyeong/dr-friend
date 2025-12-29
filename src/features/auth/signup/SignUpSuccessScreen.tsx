@@ -53,9 +53,9 @@ const ButtonContainer = styled.View`
   background-color: transparent;
 `;
 
-const SignUpSuccessScreen: React.FC<Props> = ({ navigation }) => {
+const SignUpSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
   const handleGoToLogin = () => {
-    navigation.navigate("InfoStep1");
+    navigation.navigate("InfoStep1", { id: route?.params?.id });
   };
 
   return (

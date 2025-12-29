@@ -79,7 +79,7 @@ const Subtitle = styled.Text`
 `;
 
 const StartButtonContainer = styled.View`
-  width: 100%;
+  width: 343px;
   margin-top: 40px;
   margin-bottom: 40px;
 `;
@@ -135,13 +135,13 @@ const NotesText = styled.Text`
   line-height: 25.6px;
 `;
 
-const SelfTestScreen: React.FC<Props> = ({ navigation }) => {
+const SelfTestScreen: React.FC<Props> = ({ navigation, route }) => {
   const theme = useTheme();
   const screenWidth = Dimensions.get("window").width;
   const textWidth = screenWidth - 32; // 패딩 제외
 
   const handleStart = () => {
-    // TODO: 실제 설문 시작 화면으로 이동
+    navigation.navigate("SurveyQuestion", { id: route.params?.id });
   };
 
   return (

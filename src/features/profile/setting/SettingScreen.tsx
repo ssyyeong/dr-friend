@@ -1,12 +1,15 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import styled, { useTheme } from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import Header from "../../../shared/components/common/Header";
 import { Modal, ScrollView, TextInput, TouchableOpacity } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ProfileStackParamList } from "../../../app/navigation/RootNavigator";
 import Button from "../../../shared/components/common/Button";
+import AppMemberController from "../../../services/AppMemberController";
+import Controller from "../../../services/controller";
+import { getMemberId } from "../../../services/authService";
 
 type SettingScreenNavigationProp = NativeStackNavigationProp<
   ProfileStackParamList,
@@ -205,10 +208,14 @@ const SettingScreen: React.FC = () => {
   const ITEM_HEIGHT = 50;
   const PICKER_HEIGHT = 200;
 
+  const [email, setEmail] = useState<string>("");
   const [gender, setGender] = useState<string>("남성");
   const [weight, setWeight] = useState<string>("");
   const [height, setHeight] = useState<string>("");
   const [birthday, setBirthday] = useState<string>("");
+  const [productStatus, setProductStatus] = useState<string>("");
+  const [productList, setProductList] = useState<string[]>([]);
+  const [memberId, setMemberId] = useState<string | null>(null);
   const [currentModal, setCurrentModal] = useState<
     "gender" | "weight" | "height" | "birthday" | null
   >(null);
@@ -216,6 +223,62 @@ const SettingScreen: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const modalInputRef = useRef<TextInput>(null);
   const genderScrollRef = useRef<ScrollView>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchUserInfo = async () => {
+        const fetchedMemberId = await getMemberId();
+        if (!fetchedMemberId) {
+          return;
+        }
+        setMemberId(fetchedMemberId);
+
+        const controller = new Controller({
+          modelName: "AppMember",
+          modelId: "app_member",
+        });
+        const response = await controller.findOne({
+          APP_MEMBER_IDENTIFICATION_CODE: fetchedMemberId,
+        });
+        if (response?.status === 200) {
+          const user = response.result;
+          // 이메일
+          if (user.USER_NAME) {
+            setEmail(user.USER_NAME);
+          }
+
+          // 성별 (M -> 남성, F -> 여성)
+          if (user.GENDER) {
+            setGender(user.GENDER === "M" ? "남성" : "여성");
+          }
+
+          // 체중
+          if (user.WEIGHT) {
+            setWeight(user.WEIGHT.toString());
+          }
+
+          // 신장
+          if (user.HEIGHT) {
+            setHeight(user.HEIGHT.toString());
+          }
+
+          // 생일
+          if (user.BIRTH) {
+            setBirthday(user.BIRTH);
+          }
+
+          //제품 보유 상태
+          if (user.PRODUCT_STATUS) {
+            setProductStatus(user.PRODUCT_STATUS);
+            if (user.PRODUCT_STATUS === "HAS") {
+              setProductList(JSON.parse(user.PRODUCT_LIST));
+            }
+          }
+        }
+      };
+      fetchUserInfo();
+    }, [])
+  );
 
   const openModal = (type: "gender" | "weight" | "height" | "birthday") => {
     setCurrentModal(type);
@@ -357,7 +420,7 @@ const SettingScreen: React.FC = () => {
     );
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (currentModal === "gender") {
       setGender(tempValue);
     } else if (currentModal === "weight") {
@@ -370,6 +433,49 @@ const SettingScreen: React.FC = () => {
     closeModal();
   };
 
+  const handleSaveAll = async () => {
+    if (!memberId) {
+      return;
+    }
+
+    const controller = new Controller({
+      modelName: "AppMember",
+      modelId: "app_member",
+    });
+
+    const updateData: any = {
+      APP_MEMBER_IDENTIFICATION_CODE: memberId,
+    };
+
+    // 성별 변환 (남성 -> M, 여성 -> F)
+    if (gender) {
+      updateData.GENDER = gender === "남성" ? "M" : "F";
+    }
+
+    // 체중, 신장, 생일
+    if (weight) {
+      updateData.WEIGHT = parseFloat(weight) || 0;
+    }
+    if (height) {
+      updateData.HEIGHT = parseFloat(height) || 0;
+    }
+    if (birthday) {
+      updateData.BIRTH = birthday;
+    }
+
+    try {
+      const response = await controller.update(updateData);
+      console.log("업데이트 성공:", response);
+      if (response?.status === 200) {
+        navigation.goBack();
+      }
+      // TODO: 성공 메시지 표시
+    } catch (error) {
+      console.error("업데이트 실패:", error);
+      // TODO: 에러 메시지 표시
+    }
+  };
+
   return (
     <Screen>
       <Header
@@ -377,7 +483,7 @@ const SettingScreen: React.FC = () => {
         showBackButton={true}
         rightButton={{
           text: "저장",
-          onPress: handleSave,
+          onPress: handleSaveAll,
         }}
       />
       <ScrollableContent showsVerticalScrollIndicator={false}>
@@ -386,7 +492,7 @@ const SettingScreen: React.FC = () => {
           <Section>
             <SectionTitle>계정</SectionTitle>
             <AccountCard activeOpacity={1}>
-              <AccountEmail>drf@gmail.com</AccountEmail>
+              <AccountEmail>{email || "이메일 없음"}</AccountEmail>
               <Ionicons
                 name="chevron-forward"
                 size={20}
@@ -438,11 +544,25 @@ const SettingScreen: React.FC = () => {
             <SectionTitle>나의 닥터프렌드 제품</SectionTitle>
             <ProductCard
               activeOpacity={1}
-              onPress={() => navigation.navigate("ProductSelect")}
+              onPress={() =>
+                productStatus === "HAS" && navigation.navigate("ProductSelect")
+              }
             >
               <ProductLeft>
-                <ProductLabel>제품 보유중</ProductLabel>
-                <ProductValue>어싱 닥터프렌드 외 1</ProductValue>
+                <ProductLabel>
+                  {productStatus === "HAS"
+                    ? "제품 보유중"
+                    : productStatus === "Y"
+                    ? "구매 계획 있음"
+                    : "구매 계획 없음"}
+                </ProductLabel>
+                <ProductValue>
+                  {productStatus === "HAS" &&
+                    productList.map((product) => product).join(", ")}
+                  {productList.length > 0
+                    ? "외 " + (productList.length - 1)
+                    : ""}
+                </ProductValue>
               </ProductLeft>
               <Ionicons
                 name="chevron-forward"

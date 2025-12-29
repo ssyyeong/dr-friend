@@ -1,9 +1,16 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import styled, { useTheme } from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { ProfileStackParamList } from "../../app/navigation/RootNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import Controller from "../../services/controller";
+import { getMemberId } from "../../services/authService";
+import ExcellentSvg from "../../../assets/icon/excellent.svg";
+import GoodSvg from "../../../assets/icon/good.svg";
+import CautionSvg from "../../../assets/icon/caution.svg";
+import ProblematicSvg from "../../../assets/icon/problematic.svg";
+import SevereSvg from "../../../assets/icon/servere.svg";
 
 type ProfileScreenNavigationProp = NativeStackNavigationProp<
   ProfileStackParamList,
@@ -63,9 +70,9 @@ const InfoCardStatusContainer = styled.View`
   margin-bottom: 12px;
 `;
 
-const InfoCardStatus = styled.Text`
+const InfoCardStatus = styled.Text<{ color: string }>`
   font-size: 16px;
-  color: #54d467;
+  color: ${({ color }) => color};
 `;
 
 const StatusDivider = styled.View`
@@ -75,9 +82,9 @@ const StatusDivider = styled.View`
   margin: 0 12px;
 `;
 
-const InfoCardStatusEnglish = styled.Text`
+const InfoCardStatusEnglish = styled.Text<{ color: string }>`
   font-size: 14px;
-  color: #54d467;
+  color: ${({ color }) => color};
 `;
 
 const InfoCardDescription = styled.Text`
@@ -137,9 +144,103 @@ const ChevronIcon = styled(Ionicons)`
   color: ${({ theme }) => theme.colors.gray400};
 `;
 
+const getResultMessage = (levelCode: string): string => {
+  switch (levelCode) {
+    case "EXCELLENT":
+      return "탄탄한 수면 건강. 현재 습관을 유지하세요.";
+    case "GOOD_MINOR":
+      return "가벼운 개선 포인트가 존재합니다.\n취침 전 루틴·카페인/스크린 관리로\n충분히 개선 가능합니다.";
+    case "CAUTION":
+      return "수면 중단·졸림·스트레스 중 1–2축에 부담.\n2–4주 행동교정(아래 권장안) + 필요 시 1차 상담 권고.";
+    case "PROBLEMATIC":
+      return "삶의 질에 영향. 수면위생 교정 + 수면 전문의/정신건강의학과/내과 상담을 권합니다.";
+    case "SEVERE":
+      return "안전·건강 위험. 전문가 평가를 우선 권고(수면무호흡·불면·과다졸림 감별 필요).";
+    default:
+      return "";
+  }
+};
+
+const getLevelColor = (levelCode: string): string => {
+  switch (levelCode) {
+    case "EXCELLENT":
+      return "#25C3FB";
+    case "GOOD_MINOR":
+      return "#63DB63";
+    case "CAUTION":
+      return "#DECC52";
+    case "PROBLEMATIC":
+      return "#E27745";
+    case "SEVERE":
+      return "#C93E3E";
+    default:
+      return "#63DB63";
+  }
+};
+
+const getLevelLabels = (levelCode: string): { ko: string; en: string } => {
+  switch (levelCode) {
+    case "EXCELLENT":
+      return { ko: "매우 양호", en: "Excellent" };
+    case "GOOD_MINOR":
+      return { ko: "양호·소견 있음", en: "Good minor concerns" };
+    case "CAUTION":
+      return { ko: "주의", en: "Caution" };
+    case "PROBLEMATIC":
+      return { ko: "문제성", en: "Problematic" };
+    case "SEVERE":
+      return { ko: "심각", en: "Severe" };
+    default:
+      return { ko: "양호·소견 있음", en: "Good minor concerns" };
+  }
+};
+
 const ProfileScreen = () => {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
   const theme = useTheme();
+  const [levelCode, setLevelCode] = useState<string | null>(null);
+  const [levelLabels, setLevelLabels] = useState<{ ko: string; en: string }>({
+    ko: "양호·소견 있음",
+    en: "Good minor concerns",
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchSurveyResults = async () => {
+        const memberId = await getMemberId();
+        if (!memberId) {
+          return;
+        }
+        const controller = new Controller({
+          modelName: "SleepSurveyResponseResult",
+          modelId: "sleep_survey_response_result",
+        });
+        const response = await controller.findAll({
+          APP_MEMBER_IDENTIFICATION_CODE: memberId,
+        });
+        if (response?.status === 200 && response?.result?.rows?.length > 0) {
+          const latestResult = response.result.rows[0];
+          const fetchedLevelCode = latestResult.LEVEL_CODE;
+          setLevelCode(fetchedLevelCode);
+          // API에서 레이블을 가져오거나, 없으면 함수로 생성
+          if (latestResult.LEVEL_LABEL_KO && latestResult.LEVEL_LABEL_EN) {
+            setLevelLabels({
+              ko: latestResult.LEVEL_LABEL_KO,
+              en: latestResult.LEVEL_LABEL_EN,
+            });
+          } else {
+            setLevelLabels(getLevelLabels(fetchedLevelCode));
+          }
+        } else {
+          setLevelCode(null);
+          setLevelLabels({ ko: "양호·소견 있음", en: "Good minor concerns" });
+        }
+      };
+      fetchSurveyResults();
+    }, [])
+  );
+
+  const levelColor = levelCode ? getLevelColor(levelCode) : "#63DB63";
 
   const settingsItems = [
     {
@@ -194,21 +295,23 @@ const ProfileScreen = () => {
               { width: 40, height: 40 }
             )}
             <DiagnosisTitle>자가 수면 진단</DiagnosisTitle>
-            <SurveyHistoryLink activeOpacity={0.7}>
+            <SurveyHistoryLink activeOpacity={1}>
               <SurveyHistoryText>설문 내역 &gt;</SurveyHistoryText>
             </SurveyHistoryLink>
             <InfoCard>
               <InfoCardStatusContainer>
-                <InfoCardStatus>양호·소견 있음</InfoCardStatus>
+                <InfoCardStatus color={levelColor}>
+                  {levelLabels.ko}
+                </InfoCardStatus>
                 <StatusDivider />
-                <InfoCardStatusEnglish>
-                  Good minor concerns
+                <InfoCardStatusEnglish color={levelColor}>
+                  {levelLabels.en}
                 </InfoCardStatusEnglish>
               </InfoCardStatusContainer>
               <InfoCardDescription>
-                가벼운 개선 포인트가 존재합니다.{"\n"}
-                취침 전 루틴·카페인/스크린 관리로{"\n"}
-                충분히 개선 가능합니다.
+                {levelCode
+                  ? getResultMessage(levelCode)
+                  : getResultMessage("GOOD_MINOR")}
               </InfoCardDescription>
             </InfoCard>
           </DiagnosisSection>

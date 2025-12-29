@@ -28,6 +28,7 @@ const BlockButton = styled(PrimaryButton)`
 
 const GradientButtonContainer = styled.View`
   height: 56px;
+  width: 100%;
   border-radius: ${({ theme }) => theme.radius.lg}px;
   overflow: hidden;
 `;

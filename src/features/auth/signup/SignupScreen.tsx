@@ -6,6 +6,7 @@ import { ScrollView } from "react-native";
 import { AuthStackParamList } from "../../../app/navigation/RootNavigator";
 import Button from "../../../shared/components/common/Button";
 import AppMemberController from "../../../services/AppMemberController";
+import { saveMemberId } from "../../../services/authService";
 import PrimaryBoxCheckSvg from "../../../../assets/icon/primary-box-check.svg";
 import GrayBoxCheckSvg from "../../../../assets/icon/gray-box-check.svg";
 import PrimaryCheckSvg from "../../../../assets/icon/primary-check.svg";
@@ -271,7 +272,6 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSignup = async () => {
-    console.log("handleSignup", isVerified);
     if (isVerified) {
       const controller = new AppMemberController({
         modelName: "AppMember",
@@ -285,7 +285,13 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
       });
       if (response?.status === 200) {
         console.log("회원가입 성공");
-        navigation.navigate("SignupSuccess");
+        const memberId = response?.data?.result?.APP_MEMBER_IDENTIFICATION_CODE;
+        if (memberId) {
+          await saveMemberId(memberId);
+        }
+        navigation.navigate("SignupSuccess", {
+          id: memberId,
+        });
       } else {
         console.warn("회원가입 실패:", response?.status);
       }

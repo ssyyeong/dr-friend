@@ -2,6 +2,7 @@ import React from "react";
 import styled from "styled-components/native";
 import { FlatList, TouchableOpacity } from "react-native";
 import CareCard from "./CareCard";
+import FilterTabs from "../../../shared/components/common/FilterTabs";
 
 interface CareItem {
   id: string;
@@ -56,24 +57,8 @@ const SectionDescription = styled.Text`
   margin-bottom: 24px;
 `;
 
-const CategoryContainer = styled.View`
-  flex-direction: row;
+const CategoryTabsContainer = styled.View`
   margin-bottom: 24px;
-`;
-
-const CategoryButton = styled(TouchableOpacity)<{ active: boolean }>`
-  padding: 6px 16px;
-  border-radius: ${({ theme }) => theme.radius.pill}px;
-  margin-right: 8px;
-  background-color: ${({ active, theme }) =>
-    active ? theme.colors.primary : theme.colors.gray700};
-`;
-
-const CategoryText = styled.Text<{ active: boolean }>`
-  font-size: 16px;
-  font-weight: 500;
-  color: ${({ active, theme }) =>
-    active ? theme.colors.text : theme.colors.gray200};
 `;
 
 const CareSection: React.FC<CareSectionProps> = ({
@@ -96,20 +81,14 @@ const CareSection: React.FC<CareSectionProps> = ({
       </SectionHeader>
       <SectionDescription>{description}</SectionDescription>
       {categories && categories.length > 0 && (
-        <CategoryContainer>
-          {categories.map((category) => (
-            <CategoryButton
-              key={category}
-              active={selectedCategory === category}
-              onPress={() => onCategoryChange?.(category)}
-              activeOpacity={1}
-            >
-              <CategoryText active={selectedCategory === category}>
-                {category}
-              </CategoryText>
-            </CategoryButton>
-          ))}
-        </CategoryContainer>
+        <CategoryTabsContainer>
+          <FilterTabs
+            tabs={categories}
+            selectedTab={selectedCategory || ""}
+            onTabChange={(tab: string) => onCategoryChange?.(tab)}
+            size="medium"
+          />
+        </CategoryTabsContainer>
       )}
       <FlatList
         data={items}

@@ -1,7 +1,6 @@
 import React, { useState, useRef } from "react";
 import {
   Modal,
-  ScrollView,
   TouchableOpacity,
   TextInput as RNTextInput,
 } from "react-native";
@@ -73,9 +72,38 @@ const InputValue = styled.Text`
   margin-right: 4px;
 `;
 
+const GenderButtonContainer = styled.View`
+  flex-direction: row;
+  gap: 12px;
+  margin-bottom: 16px;
+`;
+
+const GenderButton = styled.TouchableOpacity<{ isSelected: boolean }>`
+  flex: 1;
+  height: 52px;
+  background-color: ${({ isSelected, theme }) =>
+    isSelected ? "rgba(115, 83, 255, 0.20)" : theme.colors.gray600};
+  border-radius: ${({ theme }) => theme.radius.md}px;
+  border-width: ${({ isSelected }) => (isSelected ? 1 : 0)}px;
+  border-color: ${({ theme }) => theme.colors.primary};
+  justify-content: center;
+  align-items: center;
+`;
+
+const GenderButtonText = styled.Text<{ isSelected: boolean }>`
+  font-size: 17px;
+  color: ${({ theme, isSelected }) =>
+    isSelected ? theme.colors.text : theme.colors.gray300};
+  font-weight: ${({ isSelected }) => (isSelected ? 600 : 400)};
+`;
+
 const ButtonContainer = styled.View`
-  width: 100%;
-  padding-top: 24px;
+  position: absolute;
+  bottom: 50;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background-color: transparent;
 `;
 
 // Bottom Sheet Modal Styles
@@ -184,26 +212,11 @@ const InfoStep2Screen: React.FC<Props> = ({ route, navigation }) => {
   const [tempValue, setTempValue] = useState<string>("");
 
   const modalInputRef = useRef<RNTextInput>(null);
-  const genderScrollRef = useRef<ScrollView>(null);
-
-  const genderOptions = ["남성", "여성"];
-  const ITEM_HEIGHT = 50;
-  const PICKER_HEIGHT = 200;
 
   const openModal = (type: "gender" | "weight" | "height" | "birthday") => {
     setCurrentModal(type);
     if (type === "gender") {
       setTempValue(gender);
-      // 성별 피커의 경우 현재 선택된 값으로 스크롤 위치 설정
-      setTimeout(() => {
-        const selectedIndex = genderOptions.indexOf(gender);
-        if (selectedIndex >= 0 && genderScrollRef.current) {
-          genderScrollRef.current.scrollTo({
-            y: selectedIndex * ITEM_HEIGHT,
-            animated: false,
-          });
-        }
-      }, 100);
     } else if (type === "weight") {
       setTempValue(weight);
     } else if (type === "height") {
@@ -216,29 +229,6 @@ const InfoStep2Screen: React.FC<Props> = ({ route, navigation }) => {
     if (type !== "gender") {
       setTimeout(() => modalInputRef.current?.focus(), 100);
     }
-  };
-
-  const handleGenderScroll = (event: any) => {
-    const y = event.nativeEvent.contentOffset.y;
-    const index = Math.round(y / ITEM_HEIGHT);
-    if (index >= 0 && index < genderOptions.length) {
-      setTempValue(genderOptions[index]);
-    }
-  };
-
-  const handleGenderScrollEnd = (event: any) => {
-    const y = event.nativeEvent.contentOffset.y;
-    const index = Math.round(y / ITEM_HEIGHT);
-    const targetIndex = Math.max(0, Math.min(index, genderOptions.length - 1));
-
-    if (genderScrollRef.current) {
-      genderScrollRef.current.scrollTo({
-        y: targetIndex * ITEM_HEIGHT,
-        animated: true,
-      });
-    }
-
-    setTempValue(genderOptions[targetIndex]);
   };
 
   const closeModal = () => {
@@ -262,6 +252,7 @@ const InfoStep2Screen: React.FC<Props> = ({ route, navigation }) => {
 
   const handleNext = () => {
     navigation.navigate("InfoStep3", {
+      id: route.params.id,
       step1Data: route.params.step1Data,
       step2Data: { gender, weight, height, birthday },
     });
@@ -285,6 +276,7 @@ const InfoStep2Screen: React.FC<Props> = ({ route, navigation }) => {
   const renderModalContent = () => {
     if (!currentModal) return null;
 
+    // 성별은 버튼 두 개로 선택
     if (currentModal === "gender") {
       return (
         <>
@@ -294,36 +286,24 @@ const InfoStep2Screen: React.FC<Props> = ({ route, navigation }) => {
               <Ionicons name="close" size={24} color="#F2F5FA" />
             </CloseButton>
           </ModalHeader>
-          <PickerContainer>
-            <PickerSelectionIndicator />
-            <PickerScrollViewContainer>
-              <ScrollView
-                ref={genderScrollRef}
-                showsVerticalScrollIndicator={false}
-                snapToInterval={ITEM_HEIGHT}
-                decelerationRate="fast"
-                onScroll={handleGenderScroll}
-                onMomentumScrollEnd={handleGenderScrollEnd}
-                scrollEventThrottle={16}
-                contentContainerStyle={{
-                  paddingTop: (PICKER_HEIGHT - ITEM_HEIGHT) / 2,
-                  paddingBottom: (PICKER_HEIGHT - ITEM_HEIGHT) / 2,
-                }}
-              >
-                {genderOptions.map((option, index) => (
-                  <PickerItem
-                    key={option}
-                    isSelected={tempValue === option}
-                    style={{ height: ITEM_HEIGHT }}
-                  >
-                    <PickerItemText isSelected={tempValue === option}>
-                      {option}
-                    </PickerItemText>
-                  </PickerItem>
-                ))}
-              </ScrollView>
-            </PickerScrollViewContainer>
-          </PickerContainer>
+          <GenderButtonContainer>
+            <GenderButton
+              isSelected={tempValue === "남성"}
+              onPress={() => setTempValue("남성")}
+            >
+              <GenderButtonText isSelected={tempValue === "남성"}>
+                남성
+              </GenderButtonText>
+            </GenderButton>
+            <GenderButton
+              isSelected={tempValue === "여성"}
+              onPress={() => setTempValue("여성")}
+            >
+              <GenderButtonText isSelected={tempValue === "여성"}>
+                여성
+              </GenderButtonText>
+            </GenderButton>
+          </GenderButtonContainer>
         </>
       );
     }
@@ -360,7 +340,7 @@ const InfoStep2Screen: React.FC<Props> = ({ route, navigation }) => {
 
           <ScrollableContent showsVerticalScrollIndicator={false}>
             <Title>
-              정확한 건강 분석에 필요한{"\n"} 고객님의 기본 정보를{"\n"}{" "}
+              정확한 건강 분석에 필요한{"\n"}고객님의 기본 정보를{"\n"}
               입력해주세요.
             </Title>
 

@@ -1,9 +1,8 @@
 // ControllerAbstractBase.ts
 import axios, { AxiosResponse, AxiosRequestConfig } from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import serverSettings from "./serviceSettings";
-import { getToken } from "./authService";
+import { getToken, getMemberId } from "./authService";
 
 // 옵션과 모델 설정에 사용할 기본 인터페이스 (필요에 따라 확장 가능)
 export interface IControllerOptions {
@@ -153,14 +152,14 @@ class ControllerAbstractBase {
       }
     });
 
-    // AsyncStorage에서 userId 가져오기 (React Native용)
+    // authService에서 사용자 식별 코드 가져오기
     try {
-      const userId = await AsyncStorage.getItem("userId");
-      if (userId) {
-        createOption.APP_MEMBER_IDENTIFICATION_CODE = userId;
+      const memberId = await getMemberId();
+      if (memberId) {
+        createOption.APP_MEMBER_IDENTIFICATION_CODE = memberId;
       }
     } catch (error) {
-      console.error("userId 가져오기 실패:", error);
+      console.error("사용자 식별 코드 가져오기 실패:", error);
     }
 
     const data = { CREATE_OPTION_KEY_LIST: JSON.stringify(createOption) };
