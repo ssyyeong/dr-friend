@@ -272,7 +272,12 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSignup = async () => {
-    if (isVerified) {
+    if (!isVerified) {
+      console.warn("인증이 완료되지 않았습니다.");
+      return;
+    }
+
+    try {
       const controller = new AppMemberController({
         modelName: "AppMember",
         modelId: "app_member",
@@ -286,17 +291,30 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
       if (response?.status === 200) {
         console.log("회원가입 성공");
         const memberId = response?.data?.result?.APP_MEMBER_IDENTIFICATION_CODE;
+
         if (memberId) {
-          await saveMemberId(memberId);
+          try {
+            await saveMemberId(memberId);
+            console.log("memberId 저장 성공:", memberId);
+            navigation.navigate("SignupSuccess", {
+              id: memberId,
+            });
+          } catch (error) {
+            console.error("memberId 저장 실패:", error);
+            // memberId 저장 여부와 관계없이 navigation 실행
+            navigation.navigate("SignupSuccess", {
+              id: memberId,
+            });
+            // 저장 실패해도 navigation은 계속 진행
+          }
         }
-        navigation.navigate("SignupSuccess", {
-          id: memberId,
-        });
       } else {
         console.warn("회원가입 실패:", response?.status);
+        // TODO: 사용자에게 에러 메시지 표시
       }
-    } else {
-      console.warn("인증이 완료되지 않았습니다.");
+    } catch (error) {
+      console.error("회원가입 중 에러 발생:", error);
+      // TODO: 사용자에게 에러 메시지 표시
     }
   };
 

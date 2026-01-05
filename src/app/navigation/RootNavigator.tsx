@@ -26,6 +26,7 @@ import SupportScreen from "../../features/profile/support/SupportScreen";
 import NoticeDetailScreen from "../../features/profile/support/NoticeDetailScreen";
 import QnaScreen from "../../features/profile/qna/QnaScreen";
 import QnaWriteScreen from "../../features/profile/qna/QnaWriteScreen";
+import SurveyScreen from "../../features/profile/survey/SurveyScreen";
 
 import SplashScreen from "../../features/auth/SplashScreen";
 
@@ -46,6 +47,7 @@ import SelfTestScreen from "../../features/auth/selftest/SelfTestScreen";
 import SurveyQuestionScreen from "../../features/auth/selftest/SurveyQuestionScreen";
 import SurveyResultScreen from "../../features/auth/selftest/SurveyResultScreen";
 import CustomRoutineScreen from "../../features/auth/selftest/CustomRoutineScreen";
+import SurveyResultProfileScreen from "../../features/profile/survey/SurveyResultProfileScreen";
 export type RootStackParamList = {
   Splash: undefined;
   Auth: undefined;
@@ -98,6 +100,10 @@ export type ProfileStackParamList = {
   };
   Qna: undefined;
   QnaWrite: undefined;
+  Survey: undefined;
+  SelfTest: { id?: string };
+  SurveyResultProfile: { result: any };
+  CustomRoutine: { result: any };
 };
 
 export type CareStackParamList = {
@@ -181,6 +187,16 @@ const ProfileStackNavigator = () => {
       <ProfileStack.Screen name="NoticeDetail" component={NoticeDetailScreen} />
       <ProfileStack.Screen name="Qna" component={QnaScreen} />
       <ProfileStack.Screen name="QnaWrite" component={QnaWriteScreen} />
+      <ProfileStack.Screen name="Survey" component={SurveyScreen} />
+      <ProfileStack.Screen name="SelfTest" component={SelfTestScreen} />
+      <ProfileStack.Screen
+        name="SurveyResultProfile"
+        component={SurveyResultProfileScreen}
+      />
+      <ProfileStack.Screen
+        name="CustomRoutine"
+        component={CustomRoutineScreen}
+      />
     </ProfileStack.Navigator>
   );
 };

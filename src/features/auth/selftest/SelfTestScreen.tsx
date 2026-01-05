@@ -141,7 +141,7 @@ const SelfTestScreen: React.FC<Props> = ({ navigation, route }) => {
   const textWidth = screenWidth - 32; // 패딩 제외
 
   const handleStart = () => {
-    navigation.navigate("SurveyQuestion", { id: route.params?.id });
+    (navigation as any).navigate("SurveyQuestion", { id: route.params?.id });
   };
 
   return (

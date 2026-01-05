@@ -219,7 +219,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             <DividerLine />
           </DividerContainer>
 
-          {/* <SocialButton
+          <SocialButton
             icon={AppleLogoSvg}
             label="Apple로 로그인하기"
             onPress={handleAppleLogin}
@@ -229,7 +229,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             icon={GoogleLogoSvg}
             label="Google로 로그인하기"
             onPress={handleGoogleLogin}
-          /> */}
+          />
         </Content>
       </Screen>
     </GradientBackground>

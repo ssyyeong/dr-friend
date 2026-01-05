@@ -2,7 +2,10 @@ import React, { useState } from "react";
 import styled, { useTheme } from "styled-components/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { ScrollView, Dimensions } from "react-native";
-import { AuthStackParamList } from "../../../app/navigation/RootNavigator";
+import {
+  AuthStackParamList,
+  ProfileStackParamList,
+} from "../../../app/navigation/RootNavigator";
 import Button from "../../../shared/components/common/Button";
 import Header from "../../../shared/components/common/Header";
 import FilterTabs from "../../../shared/components/common/FilterTabs";
@@ -14,7 +17,9 @@ import CautionSvg from "../../../../assets/icon/caution.svg";
 import ProblematicSvg from "../../../../assets/icon/problematic.svg";
 import SevereSvg from "../../../../assets/icon/servere.svg";
 
-type Props = NativeStackScreenProps<AuthStackParamList, "CustomRoutine">;
+type Props =
+  | NativeStackScreenProps<AuthStackParamList, "CustomRoutine">
+  | NativeStackScreenProps<ProfileStackParamList, "CustomRoutine">;
 
 const Screen = styled.SafeAreaView`
   flex: 1;

@@ -295,7 +295,10 @@ const ProfileScreen = () => {
               { width: 40, height: 40 }
             )}
             <DiagnosisTitle>자가 수면 진단</DiagnosisTitle>
-            <SurveyHistoryLink activeOpacity={1}>
+            <SurveyHistoryLink
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate("Survey")}
+            >
               <SurveyHistoryText>설문 내역 &gt;</SurveyHistoryText>
             </SurveyHistoryLink>
             <InfoCard>

@@ -194,7 +194,10 @@ const SleepMemoModal: React.FC<SleepMemoModalProps> = ({
     >
       <ModalOverlay>
         <OverlayTouchable activeOpacity={1} onPress={onClose} />
-        <ModalCard>
+        <ModalCard
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
+        >
           <ModalHeader>
             <ModalTitle>{title}</ModalTitle>
             <CloseButton onPress={onClose} activeOpacity={1}>

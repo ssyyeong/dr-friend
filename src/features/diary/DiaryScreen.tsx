@@ -1505,7 +1505,6 @@ const DiaryScreen = () => {
         selectedOptions={currentSleepData.memoOptions}
         onOptionsChange={(options) => {
           saveSleepData(selectedDate, { memoOptions: options });
-          setIsMemoModalVisible(false);
         }}
       />
 
