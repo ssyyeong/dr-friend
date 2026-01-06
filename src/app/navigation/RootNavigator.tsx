@@ -48,6 +48,8 @@ import SurveyQuestionScreen from "../../features/auth/selftest/SurveyQuestionScr
 import SurveyResultScreen from "../../features/auth/selftest/SurveyResultScreen";
 import CustomRoutineScreen from "../../features/auth/selftest/CustomRoutineScreen";
 import SurveyResultProfileScreen from "../../features/profile/survey/SurveyResultProfileScreen";
+import SleepGoalFormScreen from "../../features/profile/sleepgoal/SleepGoalFormScreen";
+import SleepGoalScreen from "../../features/profile/sleepgoal/SleepGoalScreen";
 export type RootStackParamList = {
   Splash: undefined;
   Auth: undefined;
@@ -104,6 +106,8 @@ export type ProfileStackParamList = {
   SelfTest: { id?: string };
   SurveyResultProfile: { result: any };
   CustomRoutine: { result: any };
+  SleepGoal: undefined;
+  SleepGoalForm: { mode?: "create" | "edit"; sleepGoal?: any };
 };
 
 export type CareStackParamList = {
@@ -196,6 +200,11 @@ const ProfileStackNavigator = () => {
       <ProfileStack.Screen
         name="CustomRoutine"
         component={CustomRoutineScreen}
+      />
+      <ProfileStack.Screen name="SleepGoal" component={SleepGoalScreen} />
+      <ProfileStack.Screen
+        name="SleepGoalForm"
+        component={SleepGoalFormScreen}
       />
     </ProfileStack.Navigator>
   );

@@ -248,7 +248,11 @@ const ProfileScreen = () => {
       label: "내 정보",
       onPress: () => navigation.navigate("Setting"),
     },
-    { icon: require("../../../assets/icon/target.svg"), label: "수면 목표" },
+    {
+      icon: require("../../../assets/icon/target.svg"),
+      label: "수면 목표",
+      onPress: () => navigation.navigate("SleepGoal"),
+    },
     {
       icon: require("../../../assets/icon/permission.svg"),
       label: "권한 관리",
