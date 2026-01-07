@@ -112,10 +112,6 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         response?.data?.result?.user?.APP_MEMBER_IDENTIFICATION_CODE
       );
 
-      // TODO: 여기서 실제 로그인 API 호출 예정
-      // const response = await loginAPI(email, password);
-      // const token = response.data.token;
-
       // 로그인 성공 시 토큰 저장
       if (response?.status === 200) {
         await saveMemberId(

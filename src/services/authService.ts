@@ -50,7 +50,6 @@ export const removeToken = async (): Promise<void> => {
  */
 export const saveMemberId = async (memberId: number): Promise<void> => {
   try {
-    console.log("saveMemberId", memberId);
     await AsyncStorage.setItem(MEMBER_ID_KEY, memberId.toString());
   } catch (error) {
     console.error("사용자 식별 코드 저장 실패:", error);
@@ -89,8 +88,11 @@ export const removeMemberId = async (): Promise<void> => {
  * @returns 토큰이 있으면 true, 없으면 false
  */
 export const isLoggedIn = async (): Promise<boolean> => {
-  const token = await getToken();
-  return token !== null && token.length > 0;
+  const memberId = await getMemberId();
+  if (memberId) {
+    return true;
+  }
+  return false;
 };
 
 /**

@@ -45,20 +45,6 @@ const ModalText = styled.Text`
   color: ${({ theme }) => theme.colors.gray200};
 `;
 
-const ConfirmButton = styled.TouchableOpacity`
-  background-color: ${({ theme }) => theme.colors.primary};
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  padding: 16px;
-  align-items: center;
-  justify-content: center;
-`;
-
-const ConfirmButtonText = styled.Text`
-  font-size: 16px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.text};
-`;
-
 interface SleepQualityInfoModalProps {
   visible: boolean;
   onClose: () => void;

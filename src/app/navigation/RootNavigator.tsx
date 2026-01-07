@@ -50,6 +50,7 @@ import CustomRoutineScreen from "../../features/auth/selftest/CustomRoutineScree
 import SurveyResultProfileScreen from "../../features/profile/survey/SurveyResultProfileScreen";
 import SleepGoalFormScreen from "../../features/profile/sleepgoal/SleepGoalFormScreen";
 import SleepGoalScreen from "../../features/profile/sleepgoal/SleepGoalScreen";
+
 export type RootStackParamList = {
   Splash: undefined;
   Auth: undefined;

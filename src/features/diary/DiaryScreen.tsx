@@ -1317,11 +1317,7 @@ const DiaryScreen = () => {
                     )
                   )}
                 </Card>
-
-                {/* ✅ 수면 분석 밑 가로선 (위/아래 20px) */}
                 <SectionDivider />
-
-                {/* 코골이 카드 */}
                 <Card>
                   <CardHeader>
                     {React.createElement(
@@ -1385,7 +1381,7 @@ const DiaryScreen = () => {
                   <MemoPillsContainer>
                     {currentSleepData.memoOptions.map((optionId) => {
                       const option = sleepMemoOptions.find(
-                        (opt) => opt.id === optionId
+                        (opt: any) => opt.id === optionId
                       );
                       if (!option) return null;
                       return (

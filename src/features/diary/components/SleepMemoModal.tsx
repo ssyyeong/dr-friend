@@ -1,7 +1,8 @@
 import React from "react";
-import { Modal } from "react-native";
+import { Modal, Pressable } from "react-native";
 import styled, { useTheme } from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Button from "../../../shared/components/common/Button";
 import SvgIcon from "../../../shared/components/common/SvgIcon";
 
@@ -74,14 +75,17 @@ const sleepMemoOptions = [
   },
 ];
 
-// 모달 스타일 컴포넌트
 const ModalOverlay = styled.View`
   flex: 1;
   justify-content: flex-end;
 `;
 
-const OverlayTouchable = styled.TouchableOpacity`
-  flex: 1;
+const Backdrop = styled(Pressable)`
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 `;
 
 const ModalCard = styled.View`
@@ -90,7 +94,6 @@ const ModalCard = styled.View`
   border-top-left-radius: ${({ theme }) => theme.radius.lg}px;
   border-top-right-radius: ${({ theme }) => theme.radius.lg}px;
   padding: 24px;
-  max-height: 90%;
 `;
 
 const ModalHeader = styled.View`
@@ -133,7 +136,7 @@ const OptionButton = styled.TouchableOpacity<{ selected: boolean }>`
   margin-bottom: 8px;
 `;
 
-const OptionIconContainer = styled.View<{ selected: boolean }>`
+const OptionIconContainer = styled.View`
   width: 20px;
   height: 20px;
   margin-bottom: 12px;
@@ -161,7 +164,7 @@ interface SleepMemoModalProps {
 const SleepMemoModal: React.FC<SleepMemoModalProps> = ({
   visible,
   onClose,
-  title = "수면 메모",
+  title = "취침 전 메모",
   buttonText = "저장",
   selectedOptions,
   onOptionsChange,
@@ -178,29 +181,32 @@ const SleepMemoModal: React.FC<SleepMemoModalProps> = ({
   };
 
   const handleButtonPress = () => {
-    if (onButtonPress) {
-      onButtonPress();
-    } else {
-      onClose();
-    }
+    onButtonPress ? onButtonPress() : onClose();
   };
 
   return (
     <Modal
       visible={visible}
-      transparent={true}
-      animationType="slide"
+      transparent
+      animationType="fade"
+      statusBarTranslucent
       onRequestClose={onClose}
     >
       <ModalOverlay>
-        <OverlayTouchable activeOpacity={1} onPress={onClose} />
+        <Backdrop
+          onPress={onClose}
+          style={{ backgroundColor: "rgba(0,0,0,0.35)" }}
+        />
+
+        {/* ✅ 바텀시트 카드 */}
         <ModalCard
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => true}
+          style={{
+            maxHeight: "80%",
+          }}
         >
           <ModalHeader>
             <ModalTitle>{title}</ModalTitle>
-            <CloseButton onPress={onClose} activeOpacity={1}>
+            <CloseButton onPress={onClose} activeOpacity={0.8}>
               <Ionicons name="close" size={24} color={theme.colors.text} />
             </CloseButton>
           </ModalHeader>
@@ -213,9 +219,9 @@ const SleepMemoModal: React.FC<SleepMemoModalProps> = ({
                   key={option.id}
                   selected={isSelected}
                   onPress={() => handleOptionToggle(option.id)}
-                  activeOpacity={1}
+                  activeOpacity={0.9}
                 >
-                  <OptionIconContainer selected={isSelected}>
+                  <OptionIconContainer>
                     <SvgIcon
                       Component={option.icon.default || option.icon}
                       width={20}
