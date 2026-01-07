@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import styled, { useTheme } from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import Header from "../../../shared/components/common/Header";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ProfileStackParamList } from "../../../app/navigation/RootNavigator";
+
+import Controller from "../../../services/controller";
 
 const Screen = styled.View`
   flex: 1;
@@ -192,115 +194,21 @@ const SupportScreen = () => {
   const theme = useTheme();
   const navigation = useNavigation<SupportScreenNavigationProp>();
   const [activeTab, setActiveTab] = useState<"faq" | "notice">("faq");
-  const [selectedCategory, setSelectedCategory] = useState<string>("전체");
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
+
+  const [faqCategories, setFaqCategories] = useState<string[]>([]);
+  const [faqAllData, setFaqAllData] = useState<FAQItem[]>([]);
+  const [faqData, setFaqData] = useState<FAQItem[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("전체");
+
+  const [noticeData, setNoticeData] = useState<NoticeItem[]>([]);
   const [faqCurrentPage, setFaqCurrentPage] = useState(1);
   const [noticeCurrentPage, setNoticeCurrentPage] = useState(1);
-
-  // 샘플 FAQ 데이터
-  const faqData: FAQItem[] = [
-    {
-      id: 1,
-      category: "서비스",
-      title: "질문의 제목이 노출됩니다.",
-      content:
-        "작성한 답변이 들어갑니다. 작성한 답변이 들어갑니다. 작성한 답변이 들어갑니다. 작성한 답변이 들어갑니다. 작성한 답변이 들어갑니다. 작성한 답변이 들어갑니다.",
-    },
-    {
-      id: 2,
-      category: "데이터",
-      title: "질문의 제목이 노출됩니다.",
-      content: "답변 내용이 여기에 표시됩니다.",
-    },
-    {
-      id: 3,
-      category: "데이터",
-      title: "질문의 제목이 노출됩니다.",
-      content: "답변 내용이 여기에 표시됩니다.",
-    },
-    {
-      id: 4,
-      category: "서비스",
-      title: "질문의 제목이 노출됩니다.",
-      content: "답변 내용이 여기에 표시됩니다.",
-    },
-    {
-      id: 5,
-      category: "데이터",
-      title: "질문의 제목이 노출됩니다.",
-      content: "답변 내용이 여기에 표시됩니다.",
-    },
-    {
-      id: 6,
-      category: "데이터",
-      title: "질문의 제목이 노출됩니다.",
-      content: "답변 내용이 여기에 표시됩니다.",
-    },
-  ];
-
-  // 샘플 공지사항 데이터
-  const noticeData: NoticeItem[] = [
-    {
-      id: 1,
-      category: "공지",
-      title: "공지사항 제목이 노출됩니다.",
-      content:
-        "공지 사항 내용이 여기에 표시됩니다. 공지 사항 내용이 여기에 표시됩니다.",
-      date: "2024.01.15",
-    },
-    {
-      id: 2,
-      category: "서비스",
-      title: "공지사항 제목이 노출됩니다.",
-      content: "공지 사항 내용이 여기에 표시됩니다.",
-      date: "2024.01.10",
-    },
-    {
-      id: 3,
-      category: "데이터",
-      title: "공지사항 제목이 노출됩니다.",
-      content: "공지 사항 내용이 여기에 표시됩니다.",
-      date: "2024.01.05",
-    },
-    {
-      id: 4,
-      category: "공지",
-      title: "공지사항 제목이 노출됩니다.",
-      content: "공지 사항 내용이 여기에 표시됩니다.",
-      date: "2024.01.01",
-    },
-    {
-      id: 5,
-      category: "서비스",
-      title: "공지사항 제목이 노출됩니다.",
-      content: "공지 사항 내용이 여기에 표시됩니다.",
-      date: "2023.12.25",
-    },
-    {
-      id: 6,
-      category: "데이터",
-      title: "공지사항 제목이 노출됩니다.",
-      content: "공지 사항 내용이 여기에 표시됩니다.",
-      date: "2023.12.20",
-    },
-  ];
-
-  const categories = ["전체", "서비스", "데이터", "기타"];
-
-  const toggleFAQ = (id: number) => {
-    const newExpanded = new Set(expandedItems);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
-    setExpandedItems(newExpanded);
-  };
 
   const filteredFAQ =
     selectedCategory === "전체"
       ? faqData
-      : faqData.filter((item) => item.category === selectedCategory);
+      : faqData.filter((item: any) => item.CATEGORY === selectedCategory);
 
   const itemsPerPage = 5;
   const faqTotalPages = Math.ceil(filteredFAQ.length / itemsPerPage);
@@ -312,6 +220,87 @@ const SupportScreen = () => {
   const noticeStartIndex = (noticeCurrentPage - 1) * itemsPerPage;
   const noticeEndIndex = noticeStartIndex + itemsPerPage;
   const paginatedNotice = noticeData.slice(noticeStartIndex, noticeEndIndex);
+
+  const fetchNoticeData = useCallback(async () => {
+    try {
+      const controller = new Controller({
+        modelName: "NoticeBoardContent",
+        modelId: "notice_board_content",
+      });
+      const response = await controller.findAll({
+        PAGE: noticeCurrentPage - 1,
+        LIMIT: 10,
+      });
+      if (response?.status === 200) {
+        setNoticeData(response.result.rows);
+      }
+    } catch (error) {
+      console.error("공지사항 데이터 불러오기 실패:", error);
+    }
+  }, [noticeCurrentPage]);
+
+  const fetchFaqData = useCallback(async () => {
+    try {
+      const controller = new Controller({
+        modelName: "FaqBoardContent",
+        modelId: "faq_board_content",
+      });
+      const response = await controller.findAll({
+        PAGE: faqCurrentPage - 1,
+        LIMIT: 10,
+      });
+
+      if (response?.status === 200) {
+        setFaqCategories([
+          "전체",
+          ...response.result.categoryList.map(
+            (category: any) => category.CATEGORY
+          ),
+        ]);
+        setFaqAllData(response.result.rows);
+        setFaqData(response.result.rows);
+      }
+    } catch (error) {
+      console.error("FAQ 데이터 불러오기 실패:", error);
+    }
+  }, [faqCurrentPage]);
+
+  // 화면 포커스 시 데이터 불러오기
+  useFocusEffect(
+    useCallback(() => {
+      fetchNoticeData();
+      fetchFaqData();
+    }, [fetchNoticeData, fetchFaqData])
+  );
+
+  // 페이지 변경 시 데이터 다시 불러오기
+  useEffect(() => {
+    fetchNoticeData();
+  }, [noticeCurrentPage, fetchNoticeData]);
+
+  useEffect(() => {
+    fetchFaqData();
+  }, [faqCurrentPage, fetchFaqData]);
+
+  const filteredFaqData = useCallback(
+    (category: string) => {
+      if (category === "전체") {
+        return faqAllData;
+      }
+      return faqAllData.filter((item: any) => item.CATEGORY === category);
+    },
+    [faqAllData]
+  );
+
+  const toggleFAQ = (id: number) => {
+    const newExpanded = new Set(expandedItems);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedItems(newExpanded);
+  };
 
   const handleFaqPageChange = (page: number) => {
     if (page >= 1 && page <= faqTotalPages) {
@@ -362,12 +351,13 @@ const SupportScreen = () => {
                 horizontal
                 showsHorizontalScrollIndicator={false}
               >
-                {categories.map((category) => (
+                {faqCategories.map((category) => (
                   <CategoryChip
                     key={category}
                     selected={selectedCategory === category}
                     onPress={() => {
                       setSelectedCategory(category);
+                      setFaqData(filteredFaqData(category));
                       setFaqCurrentPage(1);
                       setExpandedItems(new Set());
                     }}
@@ -379,18 +369,24 @@ const SupportScreen = () => {
               </CategoryFilterContainer>
 
               <FAQList>
-                {paginatedFAQ.map((item) => (
-                  <FAQItem key={item.id}>
+                {paginatedFAQ.map((item: any) => (
+                  <FAQItem key={item.FAQ_BOARD_CONTENT_IDENTIFICATION_CODE}>
                     <FAQHeader
-                      expanded={expandedItems.has(item.id)}
-                      onPress={() => toggleFAQ(item.id)}
+                      expanded={expandedItems.has(
+                        item.FAQ_BOARD_CONTENT_IDENTIFICATION_CODE
+                      )}
+                      onPress={() =>
+                        toggleFAQ(item.FAQ_BOARD_CONTENT_IDENTIFICATION_CODE)
+                      }
                       activeOpacity={1}
                     >
-                      <FAQCategory>[{item.category}]</FAQCategory>
-                      <FAQTitle>{item.title}</FAQTitle>
+                      <FAQCategory>[{item.CATEGORY}]</FAQCategory>
+                      <FAQTitle>{item.TITLE}</FAQTitle>
                       <Ionicons
                         name={
-                          expandedItems.has(item.id)
+                          expandedItems.has(
+                            item.FAQ_BOARD_CONTENT_IDENTIFICATION_CODE
+                          )
                             ? "chevron-up"
                             : "chevron-down"
                         }
@@ -398,9 +394,15 @@ const SupportScreen = () => {
                         color={theme.colors.text}
                       />
                     </FAQHeader>
-                    {expandedItems.has(item.id) && (
-                      <FAQContent expanded={expandedItems.has(item.id)}>
-                        <FAQContentText>{item.content}</FAQContentText>
+                    {expandedItems.has(
+                      item.FAQ_BOARD_CONTENT_IDENTIFICATION_CODE
+                    ) && (
+                      <FAQContent
+                        expanded={expandedItems.has(
+                          item.FAQ_BOARD_CONTENT_IDENTIFICATION_CODE
+                        )}
+                      >
+                        <FAQContentText>{item.CONTENT}</FAQContentText>
                       </FAQContent>
                     )}
                   </FAQItem>
@@ -412,9 +414,9 @@ const SupportScreen = () => {
           {activeTab === "notice" && (
             <ScrollableContent showsVerticalScrollIndicator={false}>
               <NoticeList>
-                {paginatedNotice.map((item, index) => (
+                {paginatedNotice.map((item: any, index) => (
                   <NoticeItem
-                    key={item.id}
+                    key={item.NOTICE_BOARD_CONTENT_IDENTIFICATION_CODE}
                     onPress={() =>
                       navigation.navigate("NoticeDetail", { notice: item })
                     }
@@ -425,8 +427,8 @@ const SupportScreen = () => {
                     }}
                   >
                     <NoticeItemLeft>
-                      <NoticeCategory>[{item.category}]</NoticeCategory>
-                      <NoticeTitle>{item.title}</NoticeTitle>
+                      <NoticeCategory>[공지]</NoticeCategory>
+                      <NoticeTitle>{item.TITLE}</NoticeTitle>
                     </NoticeItemLeft>
                     <Ionicons
                       name="chevron-forward"

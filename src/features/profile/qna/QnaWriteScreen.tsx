@@ -3,7 +3,8 @@ import styled from "styled-components/native";
 import Header from "../../../shared/components/common/Header";
 import Button from "../../../shared/components/common/Button";
 import { useNavigation } from "@react-navigation/native";
-
+import Controller from "../../../services/controller";
+import { getMemberId } from "../../../services/authService";
 const Screen = styled.SafeAreaView`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
@@ -77,14 +78,23 @@ const QnaWriteScreen = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!title.trim() || !content.trim()) {
       // TODO: 유효성 검사 알림 추가
       return;
     }
-    // TODO: 문의 제출 로직 구현
-    console.log("제출:", { title, content });
-    navigation.goBack();
+    const controller = new Controller({
+      modelName: "QnaBoardQuestion",
+      modelId: "qna_board_question",
+    });
+    const response = await controller.create({
+      TITLE: title,
+      CONTENT: content,
+      APP_MEMBER_IDENTIFICATION_CODE: getMemberId(),
+    });
+    if (response?.status === 200) {
+      navigation.goBack();
+    }
   };
 
   return (

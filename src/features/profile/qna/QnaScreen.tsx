@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import styled, { useTheme } from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import Header from "../../../shared/components/common/Header";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ProfileStackParamList } from "../../../app/navigation/RootNavigator";
+import Controller from "../../../services/controller";
+import { getMemberId } from "../../../services/authService";
 
 const Screen = styled.SafeAreaView`
   flex: 1;
@@ -180,17 +182,6 @@ const PageNumberText = styled.Text`
   color: ${({ theme }) => theme.colors.text};
 `;
 
-// Q&A 데이터 타입
-type QnaItem = {
-  id: number;
-  title: string;
-  question: string;
-  questionDate: string;
-  answer?: string;
-  answerDate?: string;
-  admin?: string;
-};
-
 type QnaScreenNavigationProp = NativeStackNavigationProp<
   ProfileStackParamList,
   "Qna"
@@ -203,61 +194,23 @@ const QnaScreen = () => {
     "answered"
   );
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
-  const [currentPage, setCurrentPage] = useState(1);
+  const [answeredPage, setAnsweredPage] = useState(1);
+  const [pendingPage, setPendingPage] = useState(1);
+  const [qnaAnsweredData, setQnaAnsweredData] = useState<any[]>([]);
+  const [qnaPendingData, setQnaPendingData] = useState<any[]>([]);
+  const [answeredTotalPages, setAnsweredTotalPages] = useState(0);
+  const [pendingTotalPages, setPendingTotalPages] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-  // 샘플 Q&A 데이터 - 답변 완료
-  const answeredQnaData: QnaItem[] = [
-    {
-      id: 1,
-      title: "문의 답변은 언제 받을 수 있나요?",
-      question: "문의를 남겼는데 답변은 언제 받을 수 있나요?",
-      questionDate: "23.07.17 12:23",
-      answer:
-        "평일 오전 9시~오후 6시 사이 접수된 문의는 24시간 이내에 순차적으로 답변드립니다. 주말 및 공휴일 접수 문의는 다음 영업일에 답변됩니다.",
-      answerDate: "23.07.18 12:23",
-      admin: "관리자",
-    },
-    {
-      id: 2,
-      title: "질문의 제목이 노출됩니다.",
-      question: "질문 내용이 여기에 표시됩니다.",
-      questionDate: "23.07.15 10:00",
-      answer: "답변 내용이 여기에 표시됩니다.",
-      answerDate: "23.07.16 14:30",
-      admin: "관리자",
-    },
-    {
-      id: 3,
-      title: "질문의 제목이 노출됩니다.",
-      question: "질문 내용이 여기에 표시됩니다.",
-      questionDate: "23.07.14 09:00",
-      answer: "답변 내용이 여기에 표시됩니다.",
-      answerDate: "23.07.15 11:00",
-      admin: "관리자",
-    },
-  ];
-
-  // 샘플 Q&A 데이터 - 답변 대기
-  const pendingQnaData: QnaItem[] = [
-    {
-      id: 4,
-      title: "질문의 제목이 노출됩니다.",
-      question: "문의를 남겼는데 답변은 언제 받을 수 있나요?",
-      questionDate: "23.07.17 12:23",
-    },
-    {
-      id: 5,
-      title: "질문의 제목이 노출됩니다.",
-      question: "질문 내용이 여기에 표시됩니다.",
-      questionDate: "23.07.16 15:00",
-    },
-    {
-      id: 6,
-      title: "질문의 제목이 노출됩니다.",
-      question: "질문 내용이 여기에 표시됩니다.",
-      questionDate: "23.07.15 16:00",
-    },
-  ];
+  // 날짜 포맷팅
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}.${month}.${day}`;
+  };
 
   const toggleQna = (id: number) => {
     const newExpanded = new Set(expandedItems);
@@ -269,31 +222,104 @@ const QnaScreen = () => {
     setExpandedItems(newExpanded);
   };
 
-  const currentData =
-    activeTab === "answered" ? answeredQnaData : pendingQnaData;
+  const fetchQnaData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const memberId = await getMemberId();
+      if (!memberId) {
+        setLoading(false);
+        return;
+      }
 
-  const itemsPerPage = 5;
-  const totalPages = Math.ceil(currentData.length / itemsPerPage);
+      const controller = new Controller({
+        modelName: "QnaBoardQuestion",
+        modelId: "qna_board_question",
+      });
+      const response = await controller.findAll({
+        APP_MEMBER_IDENTIFICATION_CODE: memberId,
+      });
+
+      if (response?.status === 200 && response?.result?.rows) {
+        const answered: any[] = [];
+        const pending: any[] = [];
+
+        response.result.rows.forEach((item: any) => {
+          if (item.QnaBoardAnswers && item.QnaBoardAnswers.length > 0) {
+            answered.push(item);
+          } else {
+            pending.push(item);
+          }
+        });
+
+        setQnaAnsweredData(answered);
+        setQnaPendingData(pending);
+        setAnsweredTotalPages(Math.ceil(answered.length / 10));
+        setPendingTotalPages(Math.ceil(pending.length / 10));
+      }
+    } catch (error) {
+      console.error("QnA 데이터 불러오기 실패:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // 화면 포커스 시 데이터 불러오기
+  useFocusEffect(
+    useCallback(() => {
+      fetchQnaData();
+    }, [fetchQnaData])
+  );
+
+  // 현재 탭에 따른 데이터와 페이지네이션
+  const currentData = useMemo(() => {
+    return activeTab === "answered" ? qnaAnsweredData : qnaPendingData;
+  }, [activeTab, qnaAnsweredData, qnaPendingData]);
+
+  const currentPage = useMemo(() => {
+    return activeTab === "answered" ? answeredPage : pendingPage;
+  }, [activeTab, answeredPage, pendingPage]);
+
+  const totalPages = useMemo(() => {
+    return activeTab === "answered" ? answeredTotalPages : pendingTotalPages;
+  }, [activeTab, answeredTotalPages, pendingTotalPages]);
+
+  const itemsPerPage = 10;
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedData = currentData.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
+      if (activeTab === "answered") {
+        setAnsweredPage(page);
+      } else {
+        setPendingPage(page);
+      }
       setExpandedItems(new Set()); // 페이지 변경 시 아코디언 닫기
     }
   };
 
   const handleTabChange = (tab: "answered" | "pending") => {
     setActiveTab(tab);
-    setCurrentPage(1);
+    if (tab === "answered") {
+      setAnsweredPage(1);
+    } else {
+      setPendingPage(1);
+    }
     setExpandedItems(new Set());
   };
 
-  const handleDelete = (id: number) => {
-    // 삭제 로직 구현
-    console.log("Delete QnA:", id);
+  const handleDelete = async (id: number) => {
+    const controller = new Controller({
+      modelName: "QnaBoardQuestion",
+      modelId: "qna_board_question",
+    });
+    const response = await controller.delete({
+      QNA_BOARD_QUESTION_IDENTIFICATION_CODE: id,
+    });
+    if (response?.status === 200) {
+      fetchQnaData();
+    }
   };
 
   const handleWriteQna = () => {
@@ -330,62 +356,104 @@ const QnaScreen = () => {
           </TabsContainer>
 
           <ScrollableContent showsVerticalScrollIndicator={false}>
-            <QnaList>
-              {paginatedData.map((item) => (
-                <QnaItem key={item.id}>
-                  <QnaHeader
-                    expanded={expandedItems.has(item.id)}
-                    onPress={() => toggleQna(item.id)}
-                    activeOpacity={1}
-                  >
-                    <QnaTitle>{item.title}</QnaTitle>
-                    <Ionicons
-                      name={
-                        expandedItems.has(item.id)
-                          ? "chevron-up"
-                          : "chevron-down"
-                      }
-                      size={24}
-                      color={theme.colors.text}
-                    />
-                  </QnaHeader>
-                  {expandedItems.has(item.id) && (
-                    <QnaContent expanded={expandedItems.has(item.id)}>
-                      <QuestionSection>
-                        <QuestionHeader>
-                          <QuestionIconText>Q.</QuestionIconText>
-                          <QuestionText>{item.question}</QuestionText>
-                        </QuestionHeader>
-                        <QuestionFooter>
-                          <QuestionDate>{item.questionDate}</QuestionDate>
-                          {activeTab === "pending" && (
-                            <DeleteButton
-                              onPress={() => handleDelete(item.id)}
-                              activeOpacity={1}
-                            >
-                              <DeleteButtonText>삭제</DeleteButtonText>
-                            </DeleteButton>
+            {loading ? (
+              <QnaList>
+                <QnaTitle style={{ textAlign: "center", padding: 40 }}>
+                  로딩 중...
+                </QnaTitle>
+              </QnaList>
+            ) : paginatedData.length === 0 ? (
+              <QnaList>
+                <QnaTitle style={{ textAlign: "center", padding: 40 }}>
+                  {activeTab === "answered"
+                    ? "답변된 문의가 없습니다."
+                    : "답변 대기 중인 문의가 없습니다."}
+                </QnaTitle>
+              </QnaList>
+            ) : (
+              <QnaList>
+                {paginatedData.map((item: any) => {
+                  const answer =
+                    item.QnaBoardAnswers && item.QnaBoardAnswers.length > 0
+                      ? item.QnaBoardAnswers[0]
+                      : null;
+                  return (
+                    <QnaItem key={item.QNA_BOARD_QUESTION_IDENTIFICATION_CODE}>
+                      <QnaHeader
+                        expanded={expandedItems.has(
+                          item.QNA_BOARD_QUESTION_IDENTIFICATION_CODE
+                        )}
+                        onPress={() =>
+                          toggleQna(item.QNA_BOARD_QUESTION_IDENTIFICATION_CODE)
+                        }
+                        activeOpacity={1}
+                      >
+                        <QnaTitle>{item.TITLE}</QnaTitle>
+                        <Ionicons
+                          name={
+                            expandedItems.has(
+                              item.QNA_BOARD_QUESTION_IDENTIFICATION_CODE
+                            )
+                              ? "chevron-up"
+                              : "chevron-down"
+                          }
+                          size={24}
+                          color={theme.colors.text}
+                        />
+                      </QnaHeader>
+                      {expandedItems.has(
+                        item.QNA_BOARD_QUESTION_IDENTIFICATION_CODE
+                      ) && (
+                        <QnaContent
+                          expanded={expandedItems.has(
+                            item.QNA_BOARD_QUESTION_IDENTIFICATION_CODE
                           )}
-                        </QuestionFooter>
-                      </QuestionSection>
+                        >
+                          <QuestionSection>
+                            <QuestionHeader>
+                              <QuestionIconText>Q.</QuestionIconText>
+                              <QuestionText>{item.CONTENT}</QuestionText>
+                            </QuestionHeader>
+                            <QuestionFooter>
+                              <QuestionDate>
+                                {formatDate(item.CREATED_AT)}
+                              </QuestionDate>
+                              {activeTab === "pending" && (
+                                <DeleteButton
+                                  onPress={() =>
+                                    handleDelete(
+                                      item.QNA_BOARD_QUESTION_IDENTIFICATION_CODE
+                                    )
+                                  }
+                                  activeOpacity={1}
+                                >
+                                  <DeleteButtonText>삭제</DeleteButtonText>
+                                </DeleteButton>
+                              )}
+                            </QuestionFooter>
+                          </QuestionSection>
 
-                      {activeTab === "answered" && item.answer && (
-                        <AnswerSection>
-                          <AnswerHeader>
-                            <AnswerIconText>A.</AnswerIconText>
-                            <AnswerText>{item.answer}</AnswerText>
-                          </AnswerHeader>
-                          <AnswerFooter>
-                            <AnswerInfo>{item.admin}</AnswerInfo>
-                            <QuestionDate>{item.answerDate}</QuestionDate>
-                          </AnswerFooter>
-                        </AnswerSection>
+                          {activeTab === "answered" && answer && (
+                            <AnswerSection>
+                              <AnswerHeader>
+                                <AnswerIconText>A.</AnswerIconText>
+                                <AnswerText>{answer.CONTENT}</AnswerText>
+                              </AnswerHeader>
+                              <AnswerFooter>
+                                <AnswerInfo>관리자</AnswerInfo>
+                                <QuestionDate>
+                                  {formatDate(answer.CREATED_AT)}
+                                </QuestionDate>
+                              </AnswerFooter>
+                            </AnswerSection>
+                          )}
+                        </QnaContent>
                       )}
-                    </QnaContent>
-                  )}
-                </QnaItem>
-              ))}
-            </QnaList>
+                    </QnaItem>
+                  );
+                })}
+              </QnaList>
+            )}
           </ScrollableContent>
         </Content>
         {totalPages > 1 && (

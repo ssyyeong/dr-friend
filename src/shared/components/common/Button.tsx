@@ -3,7 +3,7 @@ import styled from "styled-components/native";
 import { TouchableOpacityProps, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
-type ButtonVariant = "primary" | "ghost" | "gradient" | "block";
+type ButtonVariant = "primary" | "ghost" | "gradient" | "block" | "transparent";
 
 interface ButtonProps extends TouchableOpacityProps {
   variant?: ButtonVariant;
@@ -49,6 +49,16 @@ const BlockLabel = styled(Label)`
   color: ${({ theme }) => theme.colors.text};
 `;
 
+const TransparentButton = styled(PrimaryButton)`
+  background-color: transparent;
+  border-width: 1px;
+  border-color: ${({ theme }) => theme.colors.gray700};
+`;
+
+const TransparentLabel = styled(Label)`
+  color: ${({ theme }) => theme.colors.text};
+`;
+
 const Button: React.FC<ButtonProps> = ({
   variant = "primary",
   children,
@@ -83,6 +93,14 @@ const Button: React.FC<ButtonProps> = ({
       <BlockButton {...props}>
         <BlockLabel>{children}</BlockLabel>
       </BlockButton>
+    );
+  }
+
+  if (variant === "transparent") {
+    return (
+      <TransparentButton {...props}>
+        <Label>{children}</Label>
+      </TransparentButton>
     );
   }
 
