@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
 import styled, { useTheme } from "styled-components/native";
+import { SafeAreaView } from "../../../shared/components/common/SafeAreaView";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { ProfileStackParamList } from "../../../app/navigation/RootNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -36,7 +37,7 @@ interface SurveyResult {
 
 type FilterType = "전체" | "최근 3개월" | "최근 6개월";
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
 `;

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import styled from "styled-components/native";
+import { SafeAreaView } from "../../shared/components/common/SafeAreaView";
 import { FlatList, Image, TouchableOpacity, View } from "react-native";
 import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -16,7 +17,7 @@ type NavigationProp = NativeStackNavigationProp<
   "HealthStoryList"
 >;
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
 `;

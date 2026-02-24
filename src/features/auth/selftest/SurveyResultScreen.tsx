@@ -1,5 +1,6 @@
 import React from "react";
 import styled, { useTheme } from "styled-components/native";
+import { SafeAreaView } from "../../../shared/components/common/SafeAreaView";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { ScrollView } from "react-native";
 import { AuthStackParamList } from "../../../app/navigation/RootNavigator";
@@ -14,7 +15,7 @@ import SevereSvg from "../../../../assets/icon/servere.svg";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "SurveyResult">;
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
 `;

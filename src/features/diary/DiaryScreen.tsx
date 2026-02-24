@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import { Animated, View, TextInput } from "react-native";
+import { SafeAreaView } from "../../shared/components/common/SafeAreaView";
 import styled, { useTheme } from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import Svg from "react-native-svg";
@@ -21,7 +22,7 @@ import Button from "../../shared/components/common/Button";
 // Styled Components
 // =====================
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
 `;
@@ -365,7 +366,7 @@ const MemoPillText = styled.Text`
   color: ${({ theme }) => theme.colors.text};
 `;
 
-// 수면 일기 관련 스타일
+// 수면 다이어리 관련 스타일
 const SleepDiarySection = styled.View`
   margin-bottom: 24px;
 `;
@@ -644,7 +645,7 @@ const DiaryScreen = () => {
         console.error("데이터 저장 실패:", error);
       }
     },
-    [currentSleepData, sleepDataMap]
+    [currentSleepData, sleepDataMap],
   );
 
   // 데이터 로드
@@ -818,7 +819,7 @@ const DiaryScreen = () => {
 
   const renderAnalysisBlock = (
     items: { label: string; value: string }[],
-    isLast?: boolean
+    isLast?: boolean,
   ) => {
     return (
       <View style={{ marginBottom: isLast ? 0 : 16 }}>
@@ -980,7 +981,7 @@ const DiaryScreen = () => {
 
     // 얕은 수면 + 깊은 수면 결합
     const combinedSleep = lightSleep.map((light, i) =>
-      Math.min(1, light + deepSleep[i])
+      Math.min(1, light + deepSleep[i]),
     );
 
     return (
@@ -1170,9 +1171,8 @@ const DiaryScreen = () => {
             >
               <SvgIcon
                 Component={
-                  require("../../../assets/icon/information-circle.svg")
-                    .default ||
-                  require("../../../assets/icon/information-circle.svg")
+                  require("../../../assets/icon/question-circle.svg").default ||
+                  require("../../../assets/icon/question-circle.svg")
                 }
                 width={32}
                 height={32}
@@ -1212,7 +1212,6 @@ const DiaryScreen = () => {
 
                   <QualityCircleContent>
                     <QualityText>{sleepQuality}%</QualityText>
-                    <QualityLabel>품질</QualityLabel>
                   </QualityCircleContent>
                 </QualityCircleContainer>
               </SleepSummaryLeft>
@@ -1277,7 +1276,7 @@ const DiaryScreen = () => {
                     {React.createElement(
                       require("../../../assets/icon/activity.svg").default ||
                         require("../../../assets/icon/activity.svg"),
-                      { width: 24, height: 24 }
+                      { width: 24, height: 24 },
                     )}
                     <CardTitle>수면 단계</CardTitle>
                   </CardHeader>
@@ -1305,7 +1304,7 @@ const DiaryScreen = () => {
                     {React.createElement(
                       require("../../../assets/icon/search.svg").default ||
                         require("../../../assets/icon/search.svg"),
-                      { width: 24, height: 24 }
+                      { width: 24, height: 24 },
                     )}
                     <CardTitle>수면 분석</CardTitle>
                   </CardHeader>
@@ -1313,8 +1312,8 @@ const DiaryScreen = () => {
                   {analysisGroups.map((group, idx) =>
                     renderAnalysisBlock(
                       group,
-                      idx === analysisGroups.length - 1
-                    )
+                      idx === analysisGroups.length - 1,
+                    ),
                   )}
                 </Card>
                 <SectionDivider />
@@ -1323,7 +1322,7 @@ const DiaryScreen = () => {
                     {React.createElement(
                       require("../../../assets/icon/chart.svg").default ||
                         require("../../../assets/icon/chart.svg"),
-                      { width: 24, height: 24 }
+                      { width: 24, height: 24 },
                     )}
                     <CardTitle>
                       코골이 구간 {currentSleepData.snoringSegments.length}
@@ -1381,7 +1380,7 @@ const DiaryScreen = () => {
                   <MemoPillsContainer>
                     {currentSleepData.memoOptions.map((optionId) => {
                       const option = sleepMemoOptions.find(
-                        (opt: any) => opt.id === optionId
+                        (opt: any) => opt.id === optionId,
                       );
                       if (!option) return null;
                       return (
@@ -1399,10 +1398,10 @@ const DiaryScreen = () => {
                   </MemoPillsContainer>
                 </SleepMemoSection>
 
-                {/* 수면 일기 섹션 */}
+                {/* 수면 다이어리 섹션 */}
                 <SleepDiarySection>
                   <DiaryHeader>
-                    <SectionTitle>수면 일기</SectionTitle>
+                    <SectionTitle>수면 다이어리</SectionTitle>
                     <EditButton
                       onPress={() => setIsDiaryModalVisible(true)}
                       activeOpacity={0.7}
@@ -1504,11 +1503,11 @@ const DiaryScreen = () => {
         }}
       />
 
-      {/* 수면 일기 모달 */}
+      {/* 수면 다이어리 모달 */}
       <SleepDiaryModal
         visible={isDiaryModalVisible}
         onClose={() => setIsDiaryModalVisible(false)}
-        title="일기"
+        title="수면 다이어리"
         diaryText={currentSleepData.diary}
         onDiaryTextChange={(text) => {
           saveSleepData(selectedDate, { diary: text });

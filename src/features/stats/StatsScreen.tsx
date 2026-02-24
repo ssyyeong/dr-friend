@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { View, Dimensions } from "react-native";
+import { SafeAreaView } from "../../shared/components/common/SafeAreaView";
 import styled, { useTheme } from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, {
@@ -22,7 +23,7 @@ import RecordSvg from "../../../assets/image/record.svg";
 // Layout / Styles
 // =====================
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
 `;
@@ -61,6 +62,12 @@ const SummarySection = styled.View`
   margin-bottom: 16px;
   align-items: center;
   padding: 32px 4px;
+`;
+
+const SummaryColorText = styled.Text`
+  font-size: 22px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.secondary};
 `;
 
 const SummaryTitle = styled.View`
@@ -413,7 +420,7 @@ const StatsScreen = () => {
 
     const totalSleepMinutes = valid.reduce(
       (s, d) => s + d.totalSleepTime.hours * 60 + d.totalSleepTime.minutes,
-      0
+      0,
     );
     const avgSleepMin = Math.floor(totalSleepMinutes / valid.length);
     const avgSleepHours = Math.floor(avgSleepMin / 60);
@@ -443,7 +450,7 @@ const StatsScreen = () => {
         if (d.bedtime.ampm === "PM" && d.bedtime.hour !== 12) m += 12 * 60;
         if (d.bedtime.ampm === "AM" && d.bedtime.hour === 12) m -= 12 * 60;
         return s + m;
-      }, 0) / valid.length
+      }, 0) / valid.length,
     );
 
     const wakeMinAvg = Math.round(
@@ -452,7 +459,7 @@ const StatsScreen = () => {
         if (d.wakeTime.ampm === "PM" && d.wakeTime.hour !== 12) m += 12 * 60;
         if (d.wakeTime.ampm === "AM" && d.wakeTime.hour === 12) m -= 12 * 60;
         return s + m;
-      }, 0) / valid.length
+      }, 0) / valid.length,
     );
 
     const deepSleepTotalMin = Math.round((avgDeepSleep / 100) * avgSleepMin);
@@ -545,7 +552,7 @@ const StatsScreen = () => {
     (measurementProgress / measurementGoal) * 100;
 
   const goalAchievements = averageData.dailyData.filter(
-    (d) => d.sleepHours >= 8
+    (d) => d.sleepHours >= 8,
   ).length;
   const goalProgressPercent = measuredDays
     ? (goalAchievements / measuredDays) * 100
@@ -568,7 +575,7 @@ const StatsScreen = () => {
   const renderBarChart = (
     values: number[],
     maxValue: number,
-    yLabelsRight: string[]
+    yLabelsRight: string[],
   ) => {
     const { w, h, padX, padY, rightAxis, bottomAxis, gridLines } = commonChart;
 
@@ -660,7 +667,7 @@ const StatsScreen = () => {
     values: number[],
     minV: number,
     maxV: number,
-    yLabelsRight: string[]
+    yLabelsRight: string[],
   ) => {
     const { w, h, padX, padY, rightAxis, bottomAxis, gridLines } = commonChart;
 
@@ -914,34 +921,7 @@ const StatsScreen = () => {
                 flexWrap: "wrap",
               }}
             >
-              <SummaryText style={{ marginRight: 4 }}>
-                {formatMonthOnly(currentMonth)}
-              </SummaryText>
-              <GradientTextContainer>
-                <Svg height="28" width={70}>
-                  <Defs>
-                    <SvgLinearGradient
-                      id="avgGradient"
-                      x1="0%"
-                      y1="0%"
-                      x2="100%"
-                      y2="0%"
-                    >
-                      <Stop offset="0%" stopColor="#7353FF" stopOpacity="1" />
-                      <Stop offset="100%" stopColor="#25C3FB" stopOpacity="1" />
-                    </SvgLinearGradient>
-                  </Defs>
-                  <SvgText
-                    x="0"
-                    y="23"
-                    fontSize="22"
-                    fontWeight="700"
-                    fill="url(#avgGradient)"
-                  >
-                    총 {measuredDays}일
-                  </SvgText>
-                </Svg>
-              </GradientTextContainer>
+              <SummaryColorText>총 {measuredDays}일</SummaryColorText>
               <SummaryText style={{ marginLeft: 4 }}>
                 수면 측정 완료
               </SummaryText>
@@ -955,32 +935,10 @@ const StatsScreen = () => {
               }}
             >
               <SummaryText style={{ marginRight: 4 }}></SummaryText>
-              <GradientTextContainer>
-                <Svg height="28" width={190}>
-                  <Defs>
-                    <SvgLinearGradient
-                      id="avgGradient"
-                      x1="0%"
-                      y1="0%"
-                      x2="100%"
-                      y2="0%"
-                    >
-                      <Stop offset="0%" stopColor="#7353FF" stopOpacity="1" />
-                      <Stop offset="100%" stopColor="#25C3FB" stopOpacity="1" />
-                    </SvgLinearGradient>
-                  </Defs>
-                  <SvgText
-                    x="0"
-                    y="23"
-                    fontSize="22"
-                    fontWeight="700"
-                    fill="url(#avgGradient)"
-                  >
-                    하루 평균 {averageData.avgSleepTime.hours}시간{" "}
-                    {averageData.avgSleepTime.minutes}분
-                  </SvgText>
-                </Svg>
-              </GradientTextContainer>
+              <SummaryColorText>
+                하루 평균 {averageData.avgSleepTime.hours}시간{" "}
+                {averageData.avgSleepTime.minutes}분
+              </SummaryColorText>
               <SummaryText style={{ marginLeft: 4 }}>수면</SummaryText>
             </View>
             <SummarySub style={{ marginTop: 16 }}>
@@ -1025,39 +983,9 @@ const StatsScreen = () => {
             <ProgressCard>
               <ProgressHeader>
                 <ProgressTitle>
-                  <GradientTextContainer>
-                    <Svg height="20" width={100}>
-                      <Defs>
-                        <SvgLinearGradient
-                          id="progressGradient"
-                          x1="0%"
-                          y1="0%"
-                          x2="100%"
-                          y2="0%"
-                        >
-                          <Stop
-                            offset="0%"
-                            stopColor="#7353FF"
-                            stopOpacity="1"
-                          />
-                          <Stop
-                            offset="100%"
-                            stopColor="#25C3FB"
-                            stopOpacity="1"
-                          />
-                        </SvgLinearGradient>
-                      </Defs>
-                      <SvgText
-                        x="0"
-                        y="15"
-                        fontSize="14"
-                        fontWeight="700"
-                        fill="url(#progressGradient)"
-                      >
-                        총 {measurementProgress}회 수면 측정
-                      </SvgText>
-                    </Svg>
-                  </GradientTextContainer>
+                  <SummaryColorText>
+                    총 {measurementProgress}회 수면 측정
+                  </SummaryColorText>
                   <ShieldSvg width={21} height={21} />
                 </ProgressTitle>
               </ProgressHeader>
@@ -1249,7 +1177,7 @@ const StatsScreen = () => {
                 if (sleepDataMap[dateKey]) {
                   dataByDate.set(
                     dateKey,
-                    averageData.dailyData[idx]?.wakeMin || 0
+                    averageData.dailyData[idx]?.wakeMin || 0,
                   );
                 }
               });
@@ -1288,7 +1216,7 @@ const StatsScreen = () => {
                   const extraVariation = (r2 - 0.5) * 180; // 추가 변동
                   return Math.max(
                     360,
-                    Math.min(720, baseValue + extraVariation)
+                    Math.min(720, baseValue + extraVariation),
                   );
                 } else if (day > 10) {
                   return Math.max(360, Math.min(720, baseValue));
@@ -1296,7 +1224,7 @@ const StatsScreen = () => {
                   // 초반부는 평균값에 가깝게
                   return Math.max(
                     360,
-                    Math.min(720, avgWakeMin + (r1 - 0.5) * 120)
+                    Math.min(720, avgWakeMin + (r1 - 0.5) * 120),
                   );
                 }
               });
@@ -1346,7 +1274,7 @@ const StatsScreen = () => {
                 if (sleepDataMap[dateKey]) {
                   dataByDate.set(
                     dateKey,
-                    averageData.dailyData[idx]?.wakeMin || 0
+                    averageData.dailyData[idx]?.wakeMin || 0,
                   );
                 }
               });
@@ -1385,7 +1313,7 @@ const StatsScreen = () => {
                   const extraVariation = (r2 - 0.5) * 180; // 추가 변동
                   return Math.max(
                     360,
-                    Math.min(720, baseValue + extraVariation)
+                    Math.min(720, baseValue + extraVariation),
                   );
                 } else if (day > 10) {
                   return Math.max(360, Math.min(720, baseValue));
@@ -1393,7 +1321,7 @@ const StatsScreen = () => {
                   // 초반부는 평균값에 가깝게
                   return Math.max(
                     360,
-                    Math.min(720, avgWakeMin + (r1 - 0.5) * 120)
+                    Math.min(720, avgWakeMin + (r1 - 0.5) * 120),
                   );
                 }
               });

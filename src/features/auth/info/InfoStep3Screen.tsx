@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ScrollView } from "react-native";
 import styled from "styled-components/native";
+import { SafeAreaView } from "../../../shared/components/common/SafeAreaView";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { AuthStackParamList } from "../../../app/navigation/RootNavigator";
@@ -14,7 +15,7 @@ const GradientBackground = styled(LinearGradient)`
   flex: 1;
 `;
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   padding: 24px 16px;
 `;
@@ -109,10 +110,17 @@ const InfoStep3Screen: React.FC<Props> = ({ route, navigation }) => {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
 
   const products = [
-    "어싱 닥터프렌드",
+    "베딩-프리미엄 이터니티",
+    "베딩-벨라포레",
+    "베딩-루네스 그레이",
+    "베딩-수프리모 화이트",
+    "베딩-베네베로 그린",
+    "베딩-로얄 사파이어",
+    "베딩-이노센트",
+    "베딩-플레르",
+    "베딩-로즈골드",
     "뉴슬립패드",
-    "그라운딩 쿠션",
-    "수면 분석 손목밴드",
+    "어싱 닥터프렌드",
   ];
 
   const handleTypeSelect = (type: "owned" | "plan" | "noPlan") => {
@@ -185,7 +193,6 @@ const InfoStep3Screen: React.FC<Props> = ({ route, navigation }) => {
           <ScrollableContent showsVerticalScrollIndicator={false}>
             <Title>
               보유 중인 닥터프렌드{"\n"}제품을 선택해주세요.{"\n"}
-              (없으신 경우 구매 계획 여부를 선택)
             </Title>
             <OptionItem
               selected={selectedType === "owned"}
@@ -225,27 +232,11 @@ const InfoStep3Screen: React.FC<Props> = ({ route, navigation }) => {
             )}
 
             <OptionItem
-              selected={selectedType === "plan"}
-              onPress={() => handleTypeSelect("plan")}
-            >
-              <OptionText>구매 계획 있음</OptionText>
-              <Ionicons
-                name="checkmark"
-                size={20}
-                color={
-                  selectedType === "plan"
-                    ? theme.colors.primary
-                    : theme.colors.gray500
-                }
-              />
-            </OptionItem>
-
-            <OptionItem
               selected={selectedType === "noPlan"}
               onPress={() => handleTypeSelect("noPlan")}
               isLast
             >
-              <OptionText>구매 계획 없음</OptionText>
+              <OptionText>아직 없지만 관심은 있어요.</OptionText>
               <Ionicons
                 name="checkmark"
                 size={20}

@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components/native";
+import { SafeAreaView } from "../../shared/components/common/SafeAreaView";
 import { FlatList, Image, TouchableOpacity, View } from "react-native";
 import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -8,13 +9,15 @@ import { CareStackParamList } from "../../app/navigation/RootNavigator";
 import Header from "../../shared/components/common/Header";
 import { theme } from "../../shared/theme/theme";
 
+import Controller from "../../services/controller";
+
 type SleepHelpListRouteProp = RouteProp<CareStackParamList, "SleepHelpList">;
 type NavigationProp = NativeStackNavigationProp<
   CareStackParamList,
   "SleepHelpList"
 >;
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
 `;
@@ -121,40 +124,27 @@ const SleepHelpListScreen = () => {
 
   const categories = ["소리", "음악", "호흡", "스트레칭"];
 
-  // 임시 데이터 - 실제 API에서 가져와야 함
-  const items = [
-    {
-      id: "1",
-      image: require("../../../assets/image/sing.png"),
-      title: "싱잉볼 테라피",
-      hasPlayButton: true,
-    },
-    {
-      id: "2",
-      image: require("../../../assets/image/fire.png"),
-      title: "장작 소리",
-    },
-    {
-      id: "3",
-      image: require("../../../assets/image/sing.png"),
-      title: "싱잉볼 테라피",
-    },
-    {
-      id: "4",
-      image: require("../../../assets/image/fire.png"),
-      title: "장작 소리",
-    },
-    {
-      id: "5",
-      image: require("../../../assets/image/sing.png"),
-      title: "싱잉볼 테라피",
-    },
-    {
-      id: "6",
-      image: require("../../../assets/image/fire.png"),
-      title: "장작 소리",
-    },
-  ];
+  const [items, setItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchItems = async () => {
+      const controller = new Controller({
+        modelName: "SleepHelpContent",
+        modelId: "sleep_help_content",
+      });
+
+      const response = await controller.findAll({});
+      if (response?.status === 200) {
+        setItems(
+          response.result.rows.map((item: any) => ({
+            ...item,
+            hasPlayButton: false,
+          })),
+        );
+      }
+    };
+    fetchItems();
+  }, []);
 
   return (
     <Screen>
@@ -195,8 +185,11 @@ const SleepHelpListScreen = () => {
                 activeOpacity={1}
               >
                 <ItemImageContainer hasPlayButton={item.hasPlayButton}>
-                  {item.image ? (
-                    <ItemImage source={item.image} resizeMode="cover" />
+                  {item.THUMBNAIL_IMAGE_URL ? (
+                    <ItemImage
+                      source={{ uri: item.THUMBNAIL_IMAGE_URL }}
+                      resizeMode="cover"
+                    />
                   ) : (
                     <View style={{ flex: 1 }} />
                   )}
@@ -211,8 +204,8 @@ const SleepHelpListScreen = () => {
                   )}
                 </ItemImageContainer>
                 <ItemContent>
-                  <ItemTitle hasPlayButton={item.hasPlayButton}>
-                    {item.title}
+                  <ItemTitle hasPlayButton={item.PLAY_BUTTON}>
+                    {item.TITLE}
                   </ItemTitle>
                 </ItemContent>
               </ItemContainer>

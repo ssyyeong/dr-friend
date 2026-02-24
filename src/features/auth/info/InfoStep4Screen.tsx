@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import styled, { useTheme } from "styled-components/native";
+import { SafeAreaView } from "../../../shared/components/common/SafeAreaView";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { AuthStackParamList } from "../../../app/navigation/RootNavigator";
@@ -13,7 +14,7 @@ const GradientBackground = styled(LinearGradient)`
   flex: 1;
 `;
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   padding: 24px 16px;
 `;

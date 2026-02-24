@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Dimensions } from "react-native";
+import { SafeAreaView } from "../../../shared/components/common/SafeAreaView";
 import styled, { useTheme } from "styled-components/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { AuthStackParamList } from "../../../app/navigation/RootNavigator";
@@ -10,7 +11,7 @@ import { calcSleepSurveyResult } from "../../../shared/utils/sleepSurveyCalculat
 import Controller from "../../../services/controller";
 type Props = NativeStackScreenProps<AuthStackParamList, "SurveyQuestion">;
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
 `;

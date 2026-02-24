@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import styled, { useTheme } from "styled-components/native";
+import { SafeAreaView } from "../../../shared/components/common/SafeAreaView";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { ScrollView, Dimensions } from "react-native";
 import { ProfileStackParamList } from "../../../app/navigation/RootNavigator";
@@ -38,7 +39,7 @@ interface RoutineCardData {
   category: RoutineCategory;
 }
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
 `;

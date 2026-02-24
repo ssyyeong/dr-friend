@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { ScrollView, Dimensions, Platform, Modal } from "react-native";
+import { SafeAreaView } from "../../shared/components/common/SafeAreaView";
 import styled, { useTheme } from "styled-components/native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -25,7 +26,7 @@ if (Platform.OS !== "web") {
   });
 }
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
 `;
 
@@ -280,7 +281,7 @@ const SleepScreen = () => {
 
   // 수면 상태 관리: 'sleeping' | 'stopped'
   const [sleepStatus, setSleepStatus] = useState<"sleeping" | "stopped">(
-    "stopped"
+    "stopped",
   );
 
   // 알림 변경 모달 상태
@@ -303,7 +304,7 @@ const SleepScreen = () => {
   // 배경 컴포넌트를 한 번만 결정하여 고정
   const BackgroundSvgComponent = useMemo(
     () => (isMorning ? MorningBackground : NightBackground),
-    [isMorning]
+    [isMorning],
   );
 
   const [selectedHour, setSelectedHour] = useState(9);
@@ -364,8 +365,8 @@ const SleepScreen = () => {
           ? 12
           : selectedHour + 12
         : selectedHour === 12
-        ? 0
-        : selectedHour;
+          ? 0
+          : selectedHour;
 
     const newAlarmTime = new Date();
     newAlarmTime.setHours(hours24);
@@ -593,7 +594,7 @@ const SleepScreen = () => {
     selectedValue: string | number,
     onScroll: (event: any) => void,
     onScrollEnd: (event: any) => void,
-    scrollRef: React.RefObject<ScrollView | null>
+    scrollRef: React.RefObject<ScrollView | null>,
   ) => {
     return (
       <PickerColumn>
@@ -681,7 +682,7 @@ const SleepScreen = () => {
                 activeOpacity={1}
                 onPress={() => setIsMemoModalVisible(true)}
               >
-                <BlockLabel>지금 취침</BlockLabel>
+                <BlockLabel>취침 시작</BlockLabel>
               </BlockButton>
             )}
 
@@ -740,11 +741,18 @@ const SleepScreen = () => {
             <TimePickerContainer>
               <TimePickerWrapper>
                 {renderPickerItems(
+                  ["AM", "PM"],
+                  selectedAmPm,
+                  handleAmPmScroll,
+                  handleAmPmScrollEnd,
+                  amPmScrollRef,
+                )}
+                {renderPickerItems(
                   Array.from({ length: 12 }, (_, i) => i + 1),
                   selectedHour,
                   handleHourScroll,
                   handleHourScrollEnd,
-                  hourScrollRef
+                  hourScrollRef,
                 )}
                 <TimeSeparator>:</TimeSeparator>
                 {renderPickerItems(
@@ -752,14 +760,7 @@ const SleepScreen = () => {
                   selectedMinute,
                   handleMinuteScroll,
                   handleMinuteScrollEnd,
-                  minuteScrollRef
-                )}
-                {renderPickerItems(
-                  ["AM", "PM"],
-                  selectedAmPm,
-                  handleAmPmScroll,
-                  handleAmPmScrollEnd,
-                  amPmScrollRef
+                  minuteScrollRef,
                 )}
               </TimePickerWrapper>
             </TimePickerContainer>

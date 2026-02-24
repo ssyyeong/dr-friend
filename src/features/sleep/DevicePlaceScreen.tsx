@@ -1,5 +1,6 @@
 import React from "react";
 import styled from "styled-components/native";
+import { SafeAreaView } from "../../shared/components/common/SafeAreaView";
 import Button from "../../shared/components/common/Button";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -11,7 +12,7 @@ type SleepScreenNavigationProp = NativeStackNavigationProp<
   "Sleep"
 >;
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
 `;

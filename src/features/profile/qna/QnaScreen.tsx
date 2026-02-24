@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState, useMemo } from "react";
 import styled, { useTheme } from "styled-components/native";
+import { SafeAreaView } from "../../../shared/components/common/SafeAreaView";
 import { Ionicons } from "@expo/vector-icons";
 import Header from "../../../shared/components/common/Header";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
@@ -8,7 +9,7 @@ import { ProfileStackParamList } from "../../../app/navigation/RootNavigator";
 import Controller from "../../../services/controller";
 import { getMemberId } from "../../../services/authService";
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
 `;

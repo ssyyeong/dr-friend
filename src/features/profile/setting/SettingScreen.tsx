@@ -2,7 +2,14 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import styled, { useTheme } from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import Header from "../../../shared/components/common/Header";
-import { Modal, ScrollView, TextInput, TouchableOpacity } from "react-native";
+import {
+  Modal,
+  Platform,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ProfileStackParamList } from "../../../app/navigation/RootNavigator";
@@ -86,6 +93,39 @@ const InputValue = styled.Text`
   font-size: 16px;
   color: ${({ theme }) => theme.colors.text};
   margin-right: 4px;
+`;
+
+const BirthdayRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+`;
+
+const BirthdayLabel = styled.Text`
+  font-size: 17px;
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+const BirthdaySelectRow = styled.View`
+  flex-direction: row;
+  gap: 8px;
+  flex: 1;
+  justify-content: flex-end;
+`;
+
+const BirthdaySelectBox = styled.TouchableOpacity`
+  flex: 1;
+  min-width: 0;
+  background-color: ${({ theme }) => theme.colors.gray600};
+  padding: 8px 12px;
+  border-radius: ${({ theme }) => theme.radius.sm}px;
+  align-items: center;
+`;
+
+const BirthdaySelectBoxText = styled.Text`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const ProductCard = styled.TouchableOpacity`
@@ -200,6 +240,51 @@ const ModalTextInput = styled.TextInput.attrs(({ theme }) => ({
   margin-bottom: 24px;
 `;
 
+// 웹에서 마우스 드래그로 피커 스크롤 (기본은 휠만 됨)
+const PickerMouseDragWrapper: React.FC<{
+  scrollRef: React.RefObject<ScrollView | null>;
+  scrollYRef: React.MutableRefObject<number>;
+  maxScrollY?: number;
+  children: React.ReactNode;
+}> = ({ scrollRef, scrollYRef, maxScrollY = 1e9, children }) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const startY = useRef(0);
+  const startScrollY = useRef(0);
+
+  if (Platform.OS !== "web") {
+    return <>{children}</>;
+  }
+
+  const getClientY = (e: any) => e?.clientY ?? e?.nativeEvent?.clientY ?? 0;
+
+  const webMouseProps = {
+    onMouseDown: (e: any) => {
+      startY.current = getClientY(e);
+      startScrollY.current = scrollYRef.current;
+      setIsDragging(true);
+      e?.preventDefault?.();
+    },
+    onMouseMove: (e: any) => {
+      if (!isDragging) return;
+      const y = getClientY(e);
+      const delta = startY.current - y;
+      const newScrollY = Math.min(
+        maxScrollY,
+        Math.max(0, startScrollY.current + delta)
+      );
+      scrollRef.current?.scrollTo({ y: newScrollY, animated: false });
+    },
+    onMouseUp: () => setIsDragging(false),
+    onMouseLeave: () => setIsDragging(false),
+  };
+
+  return (
+    <View style={{ flex: 1 }} {...(Platform.OS === "web" ? (webMouseProps as any) : {})}>
+      {children}
+    </View>
+  );
+};
+
 const SettingScreen: React.FC = () => {
   const navigation = useNavigation<SettingScreenNavigationProp>();
   const theme = useTheme();
@@ -212,17 +297,37 @@ const SettingScreen: React.FC = () => {
   const [gender, setGender] = useState<string>("남성");
   const [weight, setWeight] = useState<string>("");
   const [height, setHeight] = useState<string>("");
-  const [birthday, setBirthday] = useState<string>("");
+  const [birthYear, setBirthYear] = useState<string>("");
+  const [birthMonth, setBirthMonth] = useState<string>("");
+  const [birthDay, setBirthDay] = useState<string>("");
   const [productStatus, setProductStatus] = useState<string>("");
   const [productList, setProductList] = useState<string[]>([]);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [currentModal, setCurrentModal] = useState<
-    "gender" | "weight" | "height" | "birthday" | null
+    | "gender"
+    | "weight"
+    | "height"
+    | "birthday-year"
+    | "birthday-month"
+    | "birthday-day"
+    | null
   >(null);
   const [tempValue, setTempValue] = useState<string>("");
   const [modalVisible, setModalVisible] = useState(false);
   const modalInputRef = useRef<TextInput>(null);
   const genderScrollRef = useRef<ScrollView>(null);
+  const birthdayPickerRef = useRef<ScrollView>(null);
+  const genderScrollYRef = useRef(0);
+  const birthdayScrollYRef = useRef(0);
+
+  const getYearOptions = () => {
+    const currentYear = new Date().getFullYear();
+    const years: string[] = [];
+    for (let y = currentYear; y >= 1920; y--) years.push(String(y));
+    return years;
+  };
+  const monthOptions = Array.from({ length: 12 }, (_, i) => String(i + 1));
+  const dayOptions = Array.from({ length: 31 }, (_, i) => String(i + 1));
 
   useFocusEffect(
     useCallback(() => {
@@ -262,9 +367,14 @@ const SettingScreen: React.FC = () => {
             setHeight(user.HEIGHT.toString());
           }
 
-          // 생일
+          // 생일 (YYYY-MM-DD → 년/월/일)
           if (user.BIRTH) {
-            setBirthday(user.BIRTH);
+            const parts = user.BIRTH.split("-");
+            if (parts.length >= 3) {
+              setBirthYear(parts[0]);
+              setBirthMonth(parts[1].replace(/^0+/, "") || "");
+              setBirthDay(parts[2].replace(/^0+/, "") || "");
+            }
           }
 
           //제품 보유 상태
@@ -277,17 +387,25 @@ const SettingScreen: React.FC = () => {
         }
       };
       fetchUserInfo();
-    }, [])
+    }, []),
   );
 
-  const openModal = (type: "gender" | "weight" | "height" | "birthday") => {
+  const openModal = (
+    type:
+      | "gender"
+      | "weight"
+      | "height"
+      | "birthday-year"
+      | "birthday-month"
+      | "birthday-day"
+  ) => {
     setCurrentModal(type);
     if (type === "gender") {
       setTempValue(gender);
-      // 성별 피커의 경우 현재 선택된 값으로 스크롤 위치 설정
+      const selectedIndex = Math.max(0, genderOptions.indexOf(gender));
+      genderScrollYRef.current = selectedIndex * ITEM_HEIGHT;
       setTimeout(() => {
-        const selectedIndex = genderOptions.indexOf(gender);
-        if (selectedIndex >= 0 && genderScrollRef.current) {
+        if (genderScrollRef.current) {
           genderScrollRef.current.scrollTo({
             y: selectedIndex * ITEM_HEIGHT,
             animated: false,
@@ -298,12 +416,51 @@ const SettingScreen: React.FC = () => {
       setTempValue(weight);
     } else if (type === "height") {
       setTempValue(height);
-    } else if (type === "birthday") {
-      setTempValue(birthday);
+    } else if (type === "birthday-year") {
+      setTempValue(birthYear);
+      const years = getYearOptions();
+      const yearIdx = Math.max(0, years.indexOf(birthYear));
+      birthdayScrollYRef.current = yearIdx * ITEM_HEIGHT;
+      // 연도 목록이 길어서 레이아웃이 늦게 잡힐 수 있음
+      const yearOpenDelay = 250;
+      setTimeout(() => {
+        if (birthdayPickerRef.current) {
+          birthdayPickerRef.current.scrollTo({
+            y: yearIdx * ITEM_HEIGHT,
+            animated: false,
+          });
+        }
+        setTimeout(() => {
+          birthdayScrollYRef.current = yearIdx * ITEM_HEIGHT;
+        }, 50);
+      }, yearOpenDelay);
+    } else if (type === "birthday-month") {
+      setTempValue(birthMonth);
+      const monthIdx = birthMonth ? Math.max(0, parseInt(birthMonth, 10) - 1) : 0;
+      birthdayScrollYRef.current = monthIdx * ITEM_HEIGHT;
+      setTimeout(() => {
+        if (birthdayPickerRef.current) {
+          birthdayPickerRef.current.scrollTo({
+            y: monthIdx * ITEM_HEIGHT,
+            animated: false,
+          });
+        }
+      }, 100);
+    } else if (type === "birthday-day") {
+      setTempValue(birthDay);
+      const dayIdx = birthDay ? Math.max(0, parseInt(birthDay, 10) - 1) : 0;
+      birthdayScrollYRef.current = dayIdx * ITEM_HEIGHT;
+      setTimeout(() => {
+        if (birthdayPickerRef.current) {
+          birthdayPickerRef.current.scrollTo({
+            y: dayIdx * ITEM_HEIGHT,
+            animated: false,
+          });
+        }
+      }, 100);
     }
     setModalVisible(true);
-    // 텍스트 입력 모달의 경우 포커스
-    if (type !== "gender") {
+    if (type !== "gender" && type !== "birthday-year" && type !== "birthday-month" && type !== "birthday-day") {
       setTimeout(() => modalInputRef.current?.focus(), 100);
     }
   };
@@ -316,6 +473,7 @@ const SettingScreen: React.FC = () => {
 
   const handleGenderScroll = (event: any) => {
     const y = event.nativeEvent.contentOffset.y;
+    genderScrollYRef.current = y;
     const index = Math.round(y / ITEM_HEIGHT);
     if (index >= 0 && index < genderOptions.length) {
       setTempValue(genderOptions[index]);
@@ -326,10 +484,12 @@ const SettingScreen: React.FC = () => {
     const y = event.nativeEvent.contentOffset.y;
     const index = Math.round(y / ITEM_HEIGHT);
     const targetIndex = Math.max(0, Math.min(index, genderOptions.length - 1));
+    const targetY = targetIndex * ITEM_HEIGHT;
+    genderScrollYRef.current = targetY;
 
     if (genderScrollRef.current) {
       genderScrollRef.current.scrollTo({
-        y: targetIndex * ITEM_HEIGHT,
+        y: targetY,
         animated: true,
       });
     }
@@ -341,14 +501,15 @@ const SettingScreen: React.FC = () => {
     if (currentModal === "gender") return "성별";
     if (currentModal === "weight") return "체중";
     if (currentModal === "height") return "신장";
-    if (currentModal === "birthday") return "생일";
+    if (currentModal === "birthday-year") return "출생 연도";
+    if (currentModal === "birthday-month") return "출생 월";
+    if (currentModal === "birthday-day") return "출생 일";
     return "";
   };
 
   const getPlaceholder = () => {
     if (currentModal === "weight") return "체중을 입력하세요 (kg)";
     if (currentModal === "height") return "신장을 입력하세요 (cm)";
-    if (currentModal === "birthday") return "생일을 입력하세요 (YYYY-MM-DD)";
     return "";
   };
 
@@ -367,40 +528,129 @@ const SettingScreen: React.FC = () => {
           <PickerContainer>
             <PickerSelectionIndicator />
             <PickerScrollViewContainer>
-              <ScrollView
-                ref={genderScrollRef}
-                showsVerticalScrollIndicator={false}
-                snapToInterval={ITEM_HEIGHT}
-                decelerationRate="fast"
-                onScroll={handleGenderScroll}
-                onMomentumScrollEnd={handleGenderScrollEnd}
-                scrollEventThrottle={16}
-                nestedScrollEnabled={true}
-                contentContainerStyle={{
-                  paddingTop: (PICKER_HEIGHT - ITEM_HEIGHT) / 2,
-                  paddingBottom: (PICKER_HEIGHT - ITEM_HEIGHT) / 2,
-                }}
-                style={{ flex: 1 }}
+              <PickerMouseDragWrapper
+                scrollRef={genderScrollRef}
+                scrollYRef={genderScrollYRef}
               >
-                {genderOptions.map((option, index) => (
-                  <PickerItem
-                    key={option}
-                    isSelected={tempValue === option}
-                    style={{ height: ITEM_HEIGHT }}
-                  >
-                    <PickerItemText isSelected={tempValue === option}>
-                      {option}
-                    </PickerItemText>
-                  </PickerItem>
-                ))}
-              </ScrollView>
+                <ScrollView
+                  ref={genderScrollRef}
+                  showsVerticalScrollIndicator={false}
+                  snapToInterval={ITEM_HEIGHT}
+                  decelerationRate="fast"
+                  onScroll={handleGenderScroll}
+                  onMomentumScrollEnd={handleGenderScrollEnd}
+                  scrollEventThrottle={16}
+                  nestedScrollEnabled={true}
+                  contentContainerStyle={{
+                    paddingTop: (PICKER_HEIGHT - ITEM_HEIGHT) / 2,
+                    paddingBottom: (PICKER_HEIGHT - ITEM_HEIGHT) / 2,
+                  }}
+                  style={{ flex: 1 }}
+                >
+                  {genderOptions.map((option, index) => (
+                    <PickerItem
+                      key={option}
+                      isSelected={tempValue === option}
+                      style={{ height: ITEM_HEIGHT }}
+                    >
+                      <PickerItemText isSelected={tempValue === option}>
+                        {option}
+                      </PickerItemText>
+                    </PickerItem>
+                  ))}
+                </ScrollView>
+              </PickerMouseDragWrapper>
             </PickerScrollViewContainer>
           </PickerContainer>
         </>
       );
     }
 
-    // 체중, 신장, 생일은 텍스트 입력
+    // 생일 년/월/일 피커
+    if (
+      currentModal === "birthday-year" ||
+      currentModal === "birthday-month" ||
+      currentModal === "birthday-day"
+    ) {
+      const options =
+        currentModal === "birthday-year"
+          ? getYearOptions()
+          : currentModal === "birthday-month"
+            ? monthOptions
+            : dayOptions;
+      const handleScroll = (event: any) => {
+        const y = event.nativeEvent.contentOffset.y;
+        birthdayScrollYRef.current = y;
+        const index = Math.round(y / ITEM_HEIGHT);
+        if (index >= 0 && index < options.length) {
+          setTempValue(options[index]);
+        }
+      };
+      const handleScrollEnd = (event: any) => {
+        const y = event.nativeEvent.contentOffset.y;
+        const index = Math.round(y / ITEM_HEIGHT);
+        const targetIndex = Math.max(0, Math.min(index, options.length - 1));
+        const targetY = targetIndex * ITEM_HEIGHT;
+        birthdayScrollYRef.current = targetY;
+        if (birthdayPickerRef.current) {
+          birthdayPickerRef.current.scrollTo({
+            y: targetY,
+            animated: true,
+          });
+        }
+        setTempValue(options[targetIndex]);
+      };
+      return (
+        <>
+          <ModalHeader>
+            <ModalTitle>{getModalTitle()}</ModalTitle>
+            <CloseButton onPress={closeModal}>
+              <Ionicons name="close" size={24} color="#F2F5FA" />
+            </CloseButton>
+          </ModalHeader>
+          <PickerContainer>
+            <PickerSelectionIndicator />
+            <PickerScrollViewContainer>
+              <PickerMouseDragWrapper
+                scrollRef={birthdayPickerRef}
+                scrollYRef={birthdayScrollYRef}
+                maxScrollY={Math.max(0, (options.length - 1) * ITEM_HEIGHT)}
+              >
+                <ScrollView
+                  ref={birthdayPickerRef}
+                  showsVerticalScrollIndicator={false}
+                  snapToInterval={ITEM_HEIGHT}
+                  decelerationRate="fast"
+                  onScroll={handleScroll}
+                  onMomentumScrollEnd={handleScrollEnd}
+                  scrollEventThrottle={16}
+                  nestedScrollEnabled={true}
+                  contentContainerStyle={{
+                    paddingTop: (PICKER_HEIGHT - ITEM_HEIGHT) / 2,
+                    paddingBottom: (PICKER_HEIGHT - ITEM_HEIGHT) / 2,
+                  }}
+                  style={{ flex: 1 }}
+                >
+                  {options.map((opt) => (
+                    <PickerItem
+                      key={opt}
+                      isSelected={tempValue === opt}
+                      style={{ height: ITEM_HEIGHT }}
+                    >
+                      <PickerItemText isSelected={tempValue === opt}>
+                        {currentModal === "birthday-month" ? `${opt}월` : currentModal === "birthday-day" ? `${opt}일` : `${opt}년`}
+                      </PickerItemText>
+                    </PickerItem>
+                  ))}
+                </ScrollView>
+              </PickerMouseDragWrapper>
+            </PickerScrollViewContainer>
+          </PickerContainer>
+        </>
+      );
+    }
+
+    // 체중, 신장은 텍스트 입력
     return (
       <>
         <ModalHeader>
@@ -414,7 +664,7 @@ const SettingScreen: React.FC = () => {
           value={tempValue}
           onChangeText={setTempValue}
           placeholder={getPlaceholder()}
-          keyboardType={currentModal === "birthday" ? "default" : "numeric"}
+          keyboardType="numeric"
         />
       </>
     );
@@ -427,8 +677,12 @@ const SettingScreen: React.FC = () => {
       setWeight(tempValue);
     } else if (currentModal === "height") {
       setHeight(tempValue);
-    } else if (currentModal === "birthday") {
-      setBirthday(tempValue);
+    } else if (currentModal === "birthday-year") {
+      setBirthYear(tempValue);
+    } else if (currentModal === "birthday-month") {
+      setBirthMonth(tempValue);
+    } else if (currentModal === "birthday-day") {
+      setBirthDay(tempValue);
     }
     closeModal();
   };
@@ -459,8 +713,8 @@ const SettingScreen: React.FC = () => {
     if (height) {
       updateData.HEIGHT = parseFloat(height) || 0;
     }
-    if (birthday) {
-      updateData.BIRTH = birthday;
+    if (birthYear && birthMonth && birthDay) {
+      updateData.BIRTH = `${birthYear}-${birthMonth.padStart(2, "0")}-${birthDay.padStart(2, "0")}`;
     }
 
     try {
@@ -529,13 +783,26 @@ const SettingScreen: React.FC = () => {
                 </InputValueContainer>
               </InputField>
 
-              <InputField onPress={() => openModal("birthday")} isLast>
-                <InputLabel>생일</InputLabel>
-                <InputValueContainer>
-                  <InputValue>{birthday || "선택"}</InputValue>
-                  <Ionicons name="chevron-down" size={16} color="#E0E9F4" />
-                </InputValueContainer>
-              </InputField>
+              <BirthdayRow style={{ marginBottom: 0 }}>
+                <BirthdayLabel>생일</BirthdayLabel>
+                <BirthdaySelectRow>
+                  <BirthdaySelectBox onPress={() => openModal("birthday-year")}>
+                    <BirthdaySelectBoxText>
+                      {birthYear || "년"}
+                    </BirthdaySelectBoxText>
+                  </BirthdaySelectBox>
+                  <BirthdaySelectBox onPress={() => openModal("birthday-month")}>
+                    <BirthdaySelectBoxText>
+                      {birthMonth ? `${birthMonth}월` : "월"}
+                    </BirthdaySelectBoxText>
+                  </BirthdaySelectBox>
+                  <BirthdaySelectBox onPress={() => openModal("birthday-day")}>
+                    <BirthdaySelectBoxText>
+                      {birthDay ? `${birthDay}일` : "일"}
+                    </BirthdaySelectBoxText>
+                  </BirthdaySelectBox>
+                </BirthdaySelectRow>
+              </BirthdayRow>
             </InputContainer>
           </Section>
 
@@ -550,14 +817,12 @@ const SettingScreen: React.FC = () => {
             >
               <ProductLeft>
                 <ProductLabel>
-                  {productStatus === "HAS"
+                  {productStatus === "Y"
                     ? "제품 보유중"
-                    : productStatus === "Y"
-                    ? "구매 계획 있음"
-                    : "구매 계획 없음"}
+                    : "아직 없지만 관심은 있어요."}
                 </ProductLabel>
                 <ProductValue>
-                  {productStatus === "HAS" &&
+                  {productStatus === "Y" &&
                     productList.map((product) => product).join(", ")}
                   {productList.length > 0
                     ? "외 " + (productList.length - 1)
@@ -602,7 +867,9 @@ const SettingScreen: React.FC = () => {
                   variant="primary"
                   onPress={handleSave}
                   disabled={
-                    currentModal === "gender" ? !tempValue : !tempValue.trim()
+                    currentModal === "gender"
+                      ? !tempValue
+                      : !tempValue.trim()
                   }
                 >
                   저장

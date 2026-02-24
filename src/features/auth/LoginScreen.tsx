@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import styled from "styled-components/native";
+import { SafeAreaView } from "../../shared/components/common/SafeAreaView";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { AuthStackParamList } from "../../app/navigation/RootNavigator";
@@ -21,7 +22,7 @@ const GradientBackground = styled(LinearGradient)`
   flex: 1;
 `;
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   padding: 60px 16px 24px;
   align-items: center;
@@ -109,13 +110,13 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       });
       console.log(
         "response",
-        response?.data?.result?.user?.APP_MEMBER_IDENTIFICATION_CODE
+        response?.data?.result?.user?.APP_MEMBER_IDENTIFICATION_CODE,
       );
 
       // 로그인 성공 시 토큰 저장
       if (response?.status === 200) {
         await saveMemberId(
-          response?.data?.result?.user?.APP_MEMBER_IDENTIFICATION_CODE
+          response?.data?.result?.user?.APP_MEMBER_IDENTIFICATION_CODE,
         );
         (navigation as any).getParent()?.navigate("MainTab");
       }
@@ -215,7 +216,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             <DividerLine />
           </DividerContainer>
 
-          <SocialButton
+          {/* <SocialButton
             icon={AppleLogoSvg}
             label="Apple로 로그인하기"
             onPress={handleAppleLogin}
@@ -225,7 +226,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             icon={GoogleLogoSvg}
             label="Google로 로그인하기"
             onPress={handleGoogleLogin}
-          />
+          /> */}
         </Content>
       </Screen>
     </GradientBackground>

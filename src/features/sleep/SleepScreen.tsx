@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ScrollView, Dimensions, Platform } from "react-native";
+import { ScrollView, Platform } from "react-native";
+import { SafeAreaView } from "../../shared/components/common/SafeAreaView";
 import styled, { useTheme } from "styled-components/native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import Button from "../../shared/components/common/Button";
 import ToggleSwitch from "../../shared/components/common/ToggleSwitch";
-import SvgIcon from "../../shared/components/common/SvgIcon";
 import { SleepStackParamList } from "../../app/navigation/RootNavigator";
 import SleepMemoModal from "../diary/components/SleepMemoModal";
 
@@ -24,7 +23,7 @@ if (Platform.OS !== "web") {
   });
 }
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
 `;
@@ -153,7 +152,6 @@ const SleepScreen = () => {
   const theme = useTheme();
   const navigation = useNavigation<SleepScreenNavigationProp>();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [alarmEnabled, setAlarmEnabled] = useState(true);
   const [alarmTime, setAlarmTime] = useState(new Date());
   const [snoringRecordingEnabled, setSnoringRecordingEnabled] = useState(false);
   const [isMemoModalVisible, setIsMemoModalVisible] = useState(false);
@@ -217,8 +215,8 @@ const SleepScreen = () => {
           ? 12
           : selectedHour + 12
         : selectedHour === 12
-        ? 0
-        : selectedHour;
+          ? 0
+          : selectedHour;
 
     const newAlarmTime = new Date();
     newAlarmTime.setHours(hours24);
@@ -234,14 +232,6 @@ const SleepScreen = () => {
       setAlarmTime(newAlarmTime);
     }
   }, [selectedHour, selectedMinute, selectedAmPm, isInitialized]);
-
-  useEffect(() => {
-    if (alarmEnabled) {
-      scheduleAlarm();
-    } else {
-      cancelAlarm();
-    }
-  }, [alarmEnabled, alarmTime]);
 
   const scheduleAlarm = async () => {
     // 웹 환경에서는 알림 기능을 사용할 수 없음
@@ -446,7 +436,7 @@ const SleepScreen = () => {
     selectedValue: string | number,
     onScroll: (event: any) => void,
     onScrollEnd: (event: any) => void,
-    scrollRef: React.RefObject<ScrollView | null>
+    scrollRef: React.RefObject<ScrollView | null>,
   ) => {
     return (
       <PickerColumn>
@@ -482,7 +472,6 @@ const SleepScreen = () => {
 
   const currentTimeFormatted = formatTime(currentTime);
   const currentDateFormatted = formatDate(currentTime);
-  const alarmTimeFormatted = formatTime(alarmTime);
 
   return (
     <Screen>
@@ -492,7 +481,7 @@ const SleepScreen = () => {
             {React.createElement(
               require("../../../assets/icon/moon.svg").default ||
                 require("../../../assets/icon/moon.svg"),
-              { width: 100, height: 100 }
+              { width: 100, height: 100 },
             )}
           </MoonIconContainer>
 
@@ -504,47 +493,40 @@ const SleepScreen = () => {
               variant="primary"
               onPress={() => setIsMemoModalVisible(true)}
             >
-              지금 취침
+              취침 시작
             </Button>
           </SleepButtonContainer>
 
           <SettingCard>
             <SettingHeader>
               <SettingTitle>알림 설정</SettingTitle>
-              <ToggleSwitch
-                value={alarmEnabled}
-                onValueChange={setAlarmEnabled}
-                size="small"
-              />
             </SettingHeader>
-            {alarmEnabled && (
-              <TimePickerContainer>
-                <TimePickerWrapper>
-                  {renderPickerItems(
-                    Array.from({ length: 12 }, (_, i) => i + 1),
-                    selectedHour,
-                    handleHourScroll,
-                    handleHourScrollEnd,
-                    hourScrollRef
-                  )}
-                  <TimeSeparator>:</TimeSeparator>
-                  {renderPickerItems(
-                    Array.from({ length: 60 }, (_, i) => i),
-                    selectedMinute,
-                    handleMinuteScroll,
-                    handleMinuteScrollEnd,
-                    minuteScrollRef
-                  )}
-                  {renderPickerItems(
-                    ["AM", "PM"],
-                    selectedAmPm,
-                    handleAmPmScroll,
-                    handleAmPmScrollEnd,
-                    amPmScrollRef
-                  )}
-                </TimePickerWrapper>
-              </TimePickerContainer>
-            )}
+            <TimePickerContainer>
+              <TimePickerWrapper>
+                {renderPickerItems(
+                  ["AM", "PM"],
+                  selectedAmPm,
+                  handleAmPmScroll,
+                  handleAmPmScrollEnd,
+                  amPmScrollRef,
+                )}
+                {renderPickerItems(
+                  Array.from({ length: 12 }, (_, i) => i + 1),
+                  selectedHour,
+                  handleHourScroll,
+                  handleHourScrollEnd,
+                  hourScrollRef,
+                )}
+                <TimeSeparator>:</TimeSeparator>
+                {renderPickerItems(
+                  Array.from({ length: 60 }, (_, i) => i),
+                  selectedMinute,
+                  handleMinuteScroll,
+                  handleMinuteScrollEnd,
+                  minuteScrollRef,
+                )}
+              </TimePickerWrapper>
+            </TimePickerContainer>
           </SettingCard>
 
           <SettingCard>

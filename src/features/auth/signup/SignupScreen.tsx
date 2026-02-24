@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import styled from "styled-components/native";
+import { SafeAreaView } from "../../../shared/components/common/SafeAreaView";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { ScrollView } from "react-native";
@@ -18,7 +19,7 @@ const GradientBackground = styled(LinearGradient)`
   flex: 1;
 `;
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
 `;
 
@@ -289,13 +290,11 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
         PHONE_NUMBER: phoneNumber,
       });
       if (response?.status === 200) {
-        console.log("회원가입 성공");
         const memberId = response?.data?.result?.APP_MEMBER_IDENTIFICATION_CODE;
 
         if (memberId) {
           try {
             await saveMemberId(memberId);
-            console.log("memberId 저장 성공:", memberId);
             navigation.navigate("SignupSuccess", {
               id: memberId,
             });
@@ -371,8 +370,8 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
                     {isVerified
                       ? "인증완료"
                       : isVerificationSent
-                      ? "인증하기"
-                      : "본인 인증"}
+                        ? "인증하기"
+                        : "본인 인증"}
                   </VerifyButtonText>
                 </VerifyButton>
               </PhoneInputContainer>

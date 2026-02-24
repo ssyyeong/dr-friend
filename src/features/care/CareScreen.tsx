@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
 import styled from "styled-components/native";
+import { SafeAreaView } from "../../shared/components/common/SafeAreaView";
 import { ScrollView, View, Dimensions, FlatList } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
@@ -15,7 +16,7 @@ import RoutineCard from "../../shared/components/common/RoutineCard";
 
 type NavigationProp = NativeStackNavigationProp<CareStackParamList, "Care">;
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
 `;

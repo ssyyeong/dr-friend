@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import styled from "styled-components/native";
+import { SafeAreaView } from "../../../shared/components/common/SafeAreaView";
 import Header from "../../../shared/components/common/Header";
 import Button from "../../../shared/components/common/Button";
 import { useNavigation } from "@react-navigation/native";
 import Controller from "../../../services/controller";
 import { getMemberId } from "../../../services/authService";
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
 `;

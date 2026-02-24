@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo, useCallback } from "react";
 import { ScrollView, Modal } from "react-native";
+import { SafeAreaView } from "../../../shared/components/common/SafeAreaView";
 import styled, { useTheme } from "styled-components/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,7 +13,7 @@ import Controller from "../../../services/controller";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "SleepGoalForm">;
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
 `;

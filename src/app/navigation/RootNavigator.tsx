@@ -245,9 +245,12 @@ const MainTabNavigator = () => {
         tabBarStyle: {
           backgroundColor: theme.colors.tabBar,
           borderTopColor: "transparent",
-          height: 72 + insets.bottom,
+          height: 60 + insets.bottom,
           paddingBottom: Math.max(10, insets.bottom),
-          paddingTop: 6,
+          paddingTop: 4,
+        },
+        tabBarItemStyle: {
+          paddingTop: 0,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -273,22 +276,22 @@ const MainTabNavigator = () => {
       <Tab.Screen
         name="Sleep"
         component={SleepStackNavigator}
-        options={{ title: "수면" }}
+        options={{ title: "슬립 체크" }}
       />
       <Tab.Screen
         name="Diary"
         component={DiaryScreen}
-        options={{ title: "일지" }}
+        options={{ title: "수면 기록" }}
       />
       <Tab.Screen
         name="Stats"
         component={StatsScreen}
-        options={{ title: "통계" }}
+        options={{ title: "회복 분석" }}
       />
       <Tab.Screen
         name="Care"
         component={CareStackNavigator}
-        options={{ title: "케어" }}
+        options={{ title: "맞춤 코칭" }}
       />
       <Tab.Screen
         name="Profile"

@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
 import styled, { useTheme } from "styled-components/native";
+import { SafeAreaView } from "../../shared/components/common/SafeAreaView";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { ProfileStackParamList } from "../../app/navigation/RootNavigator";
@@ -17,7 +18,7 @@ type ProfileScreenNavigationProp = NativeStackNavigationProp<
   "Profile"
 >;
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
 `;

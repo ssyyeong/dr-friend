@@ -4,6 +4,7 @@ import {
   TouchableOpacity,
   TextInput as RNTextInput,
 } from "react-native";
+import { SafeAreaView } from "../../../shared/components/common/SafeAreaView";
 import styled from "styled-components/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
@@ -18,7 +19,7 @@ const GradientBackground = styled(LinearGradient)`
   flex: 1;
 `;
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   padding: 24px 16px;
 `;

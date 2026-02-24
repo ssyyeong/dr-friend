@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components/native";
+import { SafeAreaView } from "../../shared/components/common/SafeAreaView";
 import {
   ScrollView,
   FlatList,
@@ -13,12 +14,14 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { CareStackParamList } from "../../app/navigation/RootNavigator";
 import Header from "../../shared/components/common/Header";
 
+import Controller from "../../services/controller";
+
 type NavigationProp = NativeStackNavigationProp<
   CareStackParamList,
   "MedicalDeviceList"
 >;
 
-const Screen = styled.SafeAreaView`
+const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
 `;
@@ -149,29 +152,21 @@ const MedicalDeviceListScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const [showMore, setShowMore] = useState(false);
 
-  // 임시 데이터 - 실제 API에서 가져와야 함
-  const products = [
-    {
-      id: "1",
-      image: require("../../../assets/image/bed.png"),
-      title: "어싱 닥터프렌드 (매트)",
-    },
-    {
-      id: "2",
-      image: require("../../../assets/image/bed2.png"),
-      title: "뉴슬립패드",
-    },
-    {
-      id: "3",
-      image: require("../../../assets/image/bed.png"),
-      title: "어싱 닥터프렌드 (매트)",
-    },
-    {
-      id: "4",
-      image: require("../../../assets/image/bed2.png"),
-      title: "뉴슬립패드",
-    },
-  ];
+  const [products, setProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const controller = new Controller({
+        modelName: "CareDevice",
+        modelId: "care_device",
+      });
+      const response = await controller.findAll({});
+      if (response?.status === 200) {
+        setProducts(response.result.rows);
+      }
+    };
+    fetchProducts();
+  }, [products]);
 
   return (
     <Screen>
@@ -184,7 +179,6 @@ const MedicalDeviceListScreen = () => {
               닥터프렌드 제품과 함께하는 {"\n"}체계적인 수면 케어를 제공합니다.
             </DescriptionText>
           </DescriptionContainer>
-
           <ActionButtonsContainer>
             <ActionButton
               variant="primary"
@@ -211,10 +205,12 @@ const MedicalDeviceListScreen = () => {
           </ActionButtonsContainer>
 
           <ProductDetailSection>
-            <ProductDetailImage
-              source={require("../../../assets/image/product.png")}
-              resizeMode="cover"
-            />
+            {products.length > 0 && (
+              <ProductDetailImage
+                source={{ uri: JSON.parse(products[0].IMAGE_URL)[0] }}
+                resizeMode="cover"
+              />
+            )}
           </ProductDetailSection>
 
           {/* <MoreButton
@@ -239,16 +235,16 @@ const MedicalDeviceListScreen = () => {
                   activeOpacity={1}
                 >
                   <ProductCardImageContainer>
-                    {product.image ? (
+                    {product.IMAGE_URL ? (
                       <ProductCardImage
-                        source={product.image}
+                        source={{ uri: JSON.parse(product.IMAGE_URL)[0] }}
                         resizeMode="cover"
                       />
                     ) : (
                       <View style={{ flex: 1 }} />
                     )}
                   </ProductCardImageContainer>
-                  <ProductCardTitle>{product.title}</ProductCardTitle>
+                  <ProductCardTitle>{product.NAME}</ProductCardTitle>
                 </ProductCard>
               ))}
             </ProductGrid>
