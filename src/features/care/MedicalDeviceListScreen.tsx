@@ -78,6 +78,10 @@ const ActionButtonText = styled.Text<{ variant: "primary" | "secondary" }>`
     variant === "primary" ? theme.colors.text : theme.colors.primary};
 `;
 
+const CareImage = styled(Image)`
+  width: 100%;
+  height: 200px;
+`;
 const ProductDetailSection = styled.View`
   overflow: hidden;
 `;
@@ -153,20 +157,36 @@ const MedicalDeviceListScreen = () => {
   const [showMore, setShowMore] = useState(false);
 
   const [products, setProducts] = useState<any[]>([]);
+  const [careBannerImage, setCareBannerImage] = useState<string | undefined>(
+    undefined,
+  );
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      const controller = new Controller({
-        modelName: "CareDevice",
-        modelId: "care_device",
-      });
-      const response = await controller.findAll({});
-      if (response?.status === 200) {
-        setProducts(response.result.rows);
-      }
-    };
     fetchProducts();
-  }, [products]);
+    fetchCareBanner();
+  }, []);
+
+  const fetchProducts = async () => {
+    const controller = new Controller({
+      modelName: "CareDevice",
+      modelId: "care_device",
+    });
+    const response = await controller.findAll({});
+    if (response?.status === 200) {
+      setProducts(response.result.rows);
+    }
+  };
+
+  const fetchCareBanner = async () => {
+    const controller = new Controller({
+      modelName: "CareBanner",
+      modelId: "care_banner",
+    });
+    const response = await controller.findAll({});
+    if (response?.status === 200 && response.result.rows.length > 0) {
+      setCareBannerImage(JSON.parse(response.result.rows[0].IMAGE_URL)[0]);
+    }
+  };
 
   return (
     <Screen>
@@ -204,14 +224,7 @@ const MedicalDeviceListScreen = () => {
             </ActionButton>
           </ActionButtonsContainer>
 
-          <ProductDetailSection>
-            {products.length > 0 && (
-              <ProductDetailImage
-                source={{ uri: JSON.parse(products[0].IMAGE_URL)[0] }}
-                resizeMode="cover"
-              />
-            )}
-          </ProductDetailSection>
+          <CareImage source={{ uri: careBannerImage }} resizeMode="contain" />
 
           {/* <MoreButton
             onPress={() => setShowMore(!showMore)}

@@ -101,6 +101,12 @@ const AnalysisBannerContainer = styled.View`
   margin-bottom: 40px;
 `;
 
+const AnalysisBannerImage = styled.Image`
+  width: 100%;
+  height: 120px;
+  border-radius: ${({ theme }) => theme.radius.lg}px;
+`;
+
 // 설정 및 고객센터 섹션
 const SectionContainer = styled.View`
   margin-bottom: 40px;
@@ -204,6 +210,9 @@ const ProfileScreen = () => {
     ko: "양호·소견 있음",
     en: "Good minor concerns",
   });
+  const [analysisBannerImage, setAnalysisBannerImage] = useState<
+    string | undefined
+  >(undefined);
 
   useFocusEffect(
     useCallback(() => {
@@ -238,8 +247,20 @@ const ProfileScreen = () => {
         }
       };
       fetchSurveyResults();
-    }, [])
+      fetchAnalysisBannerImage();
+    }, []),
   );
+
+  const fetchAnalysisBannerImage = async () => {
+    const controller = new Controller({
+      modelName: "PromotionBanner",
+      modelId: "promotion_banner",
+    });
+    const response = await controller.findAll({});
+    if (response?.status === 200 && response.result.rows.length > 0) {
+      setAnalysisBannerImage(JSON.parse(response.result.rows[0].IMAGE_URL)[0]);
+    }
+  };
 
   const levelColor = levelCode ? getLevelColor(levelCode) : "#63DB63";
 
@@ -297,7 +318,7 @@ const ProfileScreen = () => {
             {React.createElement(
               require("../../../assets/icon/cloud-moon.svg").default ||
                 require("../../../assets/icon/cloud-moon.svg"),
-              { width: 40, height: 40 }
+              { width: 40, height: 40 },
             )}
             <DiagnosisTitle>자가 수면 진단</DiagnosisTitle>
             <SurveyHistoryLink
@@ -326,11 +347,10 @@ const ProfileScreen = () => {
 
           {/* 정밀 수면 분석 배너 */}
           <AnalysisBannerContainer>
-            {React.createElement(
-              require("../../../assets/image/marketing-banner.svg").default ||
-                require("../../../assets/image/marketing-banner.svg"),
-              { width: "100%", height: 120 }
-            )}
+            <AnalysisBannerImage
+              source={{ uri: analysisBannerImage }}
+              resizeMode="cover"
+            />
           </AnalysisBannerContainer>
 
           {/* 설정 섹션 */}
