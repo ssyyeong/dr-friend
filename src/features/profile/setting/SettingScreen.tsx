@@ -9,7 +9,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  KeyboardAvoidingView,
 } from "react-native";
+
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ProfileStackParamList } from "../../../app/navigation/RootNavigator";
@@ -17,6 +19,7 @@ import Button from "../../../shared/components/common/Button";
 import AppMemberController from "../../../services/AppMemberController";
 import Controller from "../../../services/controller";
 import { getMemberId } from "../../../services/authService";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type SettingScreenNavigationProp = NativeStackNavigationProp<
   ProfileStackParamList,
@@ -270,7 +273,7 @@ const PickerMouseDragWrapper: React.FC<{
       const delta = startY.current - y;
       const newScrollY = Math.min(
         maxScrollY,
-        Math.max(0, startScrollY.current + delta)
+        Math.max(0, startScrollY.current + delta),
       );
       scrollRef.current?.scrollTo({ y: newScrollY, animated: false });
     },
@@ -279,13 +282,18 @@ const PickerMouseDragWrapper: React.FC<{
   };
 
   return (
-    <View style={{ flex: 1 }} {...(Platform.OS === "web" ? (webMouseProps as any) : {})}>
+    <View
+      style={{ flex: 1 }}
+      {...(Platform.OS === "web" ? (webMouseProps as any) : {})}
+    >
       {children}
     </View>
   );
 };
 
 const SettingScreen: React.FC = () => {
+  const insets = useSafeAreaInsets(); // ✅ 추가
+
   const navigation = useNavigation<SettingScreenNavigationProp>();
   const theme = useTheme();
 
@@ -397,7 +405,7 @@ const SettingScreen: React.FC = () => {
       | "height"
       | "birthday-year"
       | "birthday-month"
-      | "birthday-day"
+      | "birthday-day",
   ) => {
     setCurrentModal(type);
     if (type === "gender") {
@@ -436,7 +444,9 @@ const SettingScreen: React.FC = () => {
       }, yearOpenDelay);
     } else if (type === "birthday-month") {
       setTempValue(birthMonth);
-      const monthIdx = birthMonth ? Math.max(0, parseInt(birthMonth, 10) - 1) : 0;
+      const monthIdx = birthMonth
+        ? Math.max(0, parseInt(birthMonth, 10) - 1)
+        : 0;
       birthdayScrollYRef.current = monthIdx * ITEM_HEIGHT;
       setTimeout(() => {
         if (birthdayPickerRef.current) {
@@ -460,7 +470,12 @@ const SettingScreen: React.FC = () => {
       }, 100);
     }
     setModalVisible(true);
-    if (type !== "gender" && type !== "birthday-year" && type !== "birthday-month" && type !== "birthday-day") {
+    if (
+      type !== "gender" &&
+      type !== "birthday-year" &&
+      type !== "birthday-month" &&
+      type !== "birthday-day"
+    ) {
       setTimeout(() => modalInputRef.current?.focus(), 100);
     }
   };
@@ -638,7 +653,11 @@ const SettingScreen: React.FC = () => {
                       style={{ height: ITEM_HEIGHT }}
                     >
                       <PickerItemText isSelected={tempValue === opt}>
-                        {currentModal === "birthday-month" ? `${opt}월` : currentModal === "birthday-day" ? `${opt}일` : `${opt}년`}
+                        {currentModal === "birthday-month"
+                          ? `${opt}월`
+                          : currentModal === "birthday-day"
+                            ? `${opt}일`
+                            : `${opt}년`}
                       </PickerItemText>
                     </PickerItem>
                   ))}
@@ -791,7 +810,9 @@ const SettingScreen: React.FC = () => {
                       {birthYear || "년"}
                     </BirthdaySelectBoxText>
                   </BirthdaySelectBox>
-                  <BirthdaySelectBox onPress={() => openModal("birthday-month")}>
+                  <BirthdaySelectBox
+                    onPress={() => openModal("birthday-month")}
+                  >
                     <BirthdaySelectBoxText>
                       {birthMonth ? `${birthMonth}월` : "월"}
                     </BirthdaySelectBoxText>
@@ -845,39 +866,45 @@ const SettingScreen: React.FC = () => {
         onRequestClose={closeModal}
         statusBarTranslucent={true}
       >
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={closeModal}
+        {/* ✅ KeyboardAvoidingView로 감싸기 */}
+        <KeyboardAvoidingView
           style={{ flex: 1 }}
-        />
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={(e) => e.stopPropagation()}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <ModalContent>
-            {renderModalContent()}
-            <ModalButtonContainer>
-              <ModalButtonWrapper>
-                <Button variant="ghost" onPress={closeModal}>
-                  취소
-                </Button>
-              </ModalButtonWrapper>
-              <ModalButtonWrapperLast>
-                <Button
-                  variant="primary"
-                  onPress={handleSave}
-                  disabled={
-                    currentModal === "gender"
-                      ? !tempValue
-                      : !tempValue.trim()
-                  }
-                >
-                  저장
-                </Button>
-              </ModalButtonWrapperLast>
-            </ModalButtonContainer>
-          </ModalContent>
-        </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={closeModal}
+            style={{ flex: 1 }}
+          />
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <ModalContent
+              style={{ paddingBottom: insets.bottom + 24 }} // ✅ 하단 safe area
+            >
+              {renderModalContent()}
+              <ModalButtonContainer>
+                <ModalButtonWrapper>
+                  <Button variant="ghost" onPress={closeModal}>
+                    취소
+                  </Button>
+                </ModalButtonWrapper>
+                <ModalButtonWrapperLast>
+                  <Button
+                    variant="primary"
+                    onPress={handleSave}
+                    disabled={
+                      currentModal === "gender" ? !tempValue : !tempValue.trim()
+                    }
+                  >
+                    저장
+                  </Button>
+                </ModalButtonWrapperLast>
+              </ModalButtonContainer>
+            </ModalContent>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
       </Modal>
     </Screen>
   );

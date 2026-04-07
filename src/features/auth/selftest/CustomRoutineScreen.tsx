@@ -115,10 +115,6 @@ const DiagnosisMessage = styled.Text`
 `;
 
 const ButtonContainer = styled.View`
-  position: absolute;
-  bottom: 50;
-  left: 0;
-  right: 0;
   padding: 16px;
   background-color: transparent;
 `;
@@ -218,7 +214,7 @@ const CustomRoutineScreen: React.FC<Props> = ({ navigation, route }) => {
   ];
 
   const filteredRoutines = routines.filter(
-    (routine) => routine.category === selectedCategory
+    (routine) => routine.category === selectedCategory,
   );
 
   // 두 개씩 묶어서 행으로 만들기
@@ -228,8 +224,13 @@ const CustomRoutineScreen: React.FC<Props> = ({ navigation, route }) => {
   }
 
   const handleStartRecord = () => {
-    // TODO: 수면 기록 화면으로 이동
-    (navigation as any).getParent()?.navigate("MainTab");
+    (navigation as any)
+      .getParent()
+      ?.getParent()
+      ?.reset({
+        index: 0,
+        routes: [{ name: "MainTab" }],
+      });
   };
 
   return (
@@ -292,13 +293,12 @@ const CustomRoutineScreen: React.FC<Props> = ({ navigation, route }) => {
             </DiagnosisSection>
           )}
         </Container>
+        <ButtonContainer>
+          <Button variant="gradient" onPress={handleStartRecord}>
+            수면 기록 시작
+          </Button>
+        </ButtonContainer>
       </ScrollableContent>
-
-      <ButtonContainer>
-        <Button variant="gradient" onPress={handleStartRecord}>
-          수면 기록 시작
-        </Button>
-      </ButtonContainer>
     </Screen>
   );
 };

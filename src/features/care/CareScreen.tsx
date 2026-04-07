@@ -119,7 +119,6 @@ const CareScreen = () => {
         const response = await controller.findAll({
           APP_MEMBER_IDENTIFICATION_CODE: memberId,
         });
-        console.log("response", response?.result?.rows);
         if (response?.status === 200 && response?.result?.rows?.length > 0) {
           const fetchedLevelCode = response?.result?.rows[0].LEVEL_CODE;
           setLevelCode(fetchedLevelCode);
@@ -128,7 +127,7 @@ const CareScreen = () => {
         }
       };
       fetchSurveyResults();
-    }, [])
+    }, []),
   );
 
   const sleepHelpItems = [
@@ -213,7 +212,7 @@ const CareScreen = () => {
   ];
 
   const filteredRoutines = routines.filter(
-    (routine) => routine.category === selectedRoutineCategory
+    (routine) => routine.category === selectedRoutineCategory,
   );
 
   return (

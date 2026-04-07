@@ -6,6 +6,10 @@ import { Dimensions } from "react-native";
 import { isLoggedIn } from "../../services/authService";
 import BackgroundSvg from "../../../assets/image/splash-background.svg";
 import LogoSvg from "../../../assets/logo/splash-logo.svg";
+import {
+  isLoggedIn as isFitbitLoggedIn,
+  loginWithFitbit,
+} from "../../services/fitbitAuth"; // 추가
 
 type Props = NativeStackScreenProps<RootStackParamList, "Splash">;
 
@@ -37,26 +41,28 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
   useEffect(() => {
     const checkAuthAndNavigate = async () => {
       try {
-        // 로그인 상태 확인
         const loggedIn = await isLoggedIn();
-        console.log("loggedIn", loggedIn);
 
-        // 1.5초 후 로그인 상태에 따라 화면 이동
-        setTimeout(() => {
-          if (loggedIn) {
-            // 로그인된 경우 메인 탭으로 이동
-            navigation.replace("MainTab");
-          } else {
-            // 로그인되지 않은 경우 로그인 화면으로 이동
-            navigation.replace("Auth");
+        if (loggedIn) {
+          // ✅ Fitbit 연동 여부 확인
+          const fitbitLinked = await isFitbitLoggedIn();
+
+          if (!fitbitLinked) {
+            // 브라우저 자동으로 띄워서 연동
+            try {
+              await loginWithFitbit();
+            } catch (e) {
+              console.log("Fitbit 연동 실패:", e);
+            }
           }
-        }, 1500);
+
+          setTimeout(() => navigation.replace("MainTab"), 1500);
+        } else {
+          setTimeout(() => navigation.replace("Auth"), 1500);
+        }
       } catch (error) {
         console.error("인증 상태 확인 실패:", error);
-        // 에러 발생 시 로그인 화면으로 이동
-        setTimeout(() => {
-          navigation.replace("Auth");
-        }, 1500);
+        setTimeout(() => navigation.replace("Auth"), 1500);
       }
     };
 

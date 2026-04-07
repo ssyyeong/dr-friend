@@ -5,18 +5,21 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import { Animated, View, TextInput } from "react-native";
+import { Animated, View } from "react-native";
 import { SafeAreaView } from "../../shared/components/common/SafeAreaView";
 import styled, { useTheme } from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import Svg from "react-native-svg";
-import { Circle, Path, Polygon, Text as SvgText, Line } from "react-native-svg";
+import { Circle, Path, Text as SvgText, Line } from "react-native-svg";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import SleepQualityInfoModal from "./components/SleepQualityInfoModal";
 import SleepMemoModal, { sleepMemoOptions } from "./components/SleepMemoModal";
 import SleepDiaryModal from "./components/SleepDiaryModal";
 import SvgIcon from "../../shared/components/common/SvgIcon";
 import Button from "../../shared/components/common/Button";
+import { useFitbitSleepByDate } from "../sleep/hooks/useFitbitSleep";
+import Controller from "../../services/controller";
+import { getMemberId } from "../../services/authService";
 
 // =====================
 // Styled Components
@@ -166,11 +169,10 @@ const TabText = styled.Text<{ active: boolean }>`
     active ? theme.colors.text : theme.colors.gray400};
 `;
 
-const Card = styled.View<{ hasDivider?: boolean }>`
+const Card = styled.View`
   background-color: rgba(79, 107, 145, 0.24);
   border-radius: ${({ theme }) => theme.radius.md}px;
   padding: 20px;
-  margin-bottom: ${({ hasDivider }) => (hasDivider ? 0 : 0)}px;
   position: relative;
 `;
 
@@ -243,12 +245,6 @@ const QualityText = styled.Text`
   color: ${({ theme }) => theme.colors.text};
 `;
 
-const QualityLabel = styled.Text`
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.text};
-  margin-top: 4px;
-`;
-
 const SleepStageGraph = styled.View`
   height: 120px;
   background-color: ${({ theme }) => theme.colors.gray700};
@@ -319,7 +315,6 @@ const PlayButton = styled.TouchableOpacity`
   margin-right: 8px;
 `;
 
-// 수면 메모 관련 스타일
 const SleepMemoSection = styled.View`
   margin-bottom: 24px;
 `;
@@ -366,7 +361,6 @@ const MemoPillText = styled.Text`
   color: ${({ theme }) => theme.colors.text};
 `;
 
-// 수면 다이어리 관련 스타일
 const SleepDiarySection = styled.View`
   margin-bottom: 24px;
 `;
@@ -395,19 +389,16 @@ const DiaryInput = styled.TextInput`
   text-align-vertical: top;
 `;
 
-// ✅ 가로 구분선 (위/아래 20px)
 const SectionDivider = styled.View`
   height: 1px;
   background-color: rgba(255, 255, 255, 0.08);
   margin-vertical: 20px;
 `;
 
-// ✅ 이미지처럼 “4개씩” 끊어서 보여줄 테이블 블록
 const AnalysisTable = styled.View`
   background-color: rgba(79, 107, 145, 0.12);
   border-radius: ${({ theme }) => theme.radius.md}px;
   overflow: hidden;
-
   border-width: 1px;
   border-color: rgba(255, 255, 255, 0.08);
 `;
@@ -418,10 +409,8 @@ const AnalysisCell = styled.View<{
 }>`
   width: 50%;
   padding: 16px;
-
   border-right-width: ${({ showRightBorder }) => (showRightBorder ? 1 : 0)}px;
   border-right-color: rgba(255, 255, 255, 0.08);
-
   border-bottom-width: ${({ showBottomBorder }) =>
     showBottomBorder ? 1 : 0}px;
   border-bottom-color: rgba(255, 255, 255, 0.08);
@@ -439,7 +428,6 @@ const AnalysisCellValue = styled.Text`
   color: ${({ theme }) => theme.colors.text};
 `;
 
-// 코칭 관련 스타일
 const CoachingContainer = styled.View`
   margin-bottom: 40px;
 `;
@@ -484,7 +472,6 @@ const CoachingAdvice = styled.Text`
   color: ${({ theme }) => theme.colors.text};
 `;
 
-// 수면 목표 관련 스타일
 const GoalContainer = styled.View`
   margin-bottom: 40px;
 `;
@@ -509,7 +496,7 @@ const GoalTitleText = styled.Text`
 type TabKey = "analysis" | "diary" | "coaching" | "goal";
 
 interface SleepData {
-  quality: number; // 0-100
+  quality: number;
   totalSleepTime: { hours: number; minutes: number };
   timeInBed: { hours: number; minutes: number };
   sleepGoal: { hours: number; minutes: number };
@@ -527,10 +514,7 @@ interface SleepData {
     awakeTime: string;
     snoring: string;
   };
-  snoringSegments: Array<{
-    time: string;
-    isPlaying?: boolean;
-  }>;
+  snoringSegments: Array<{ time: string; isPlaying?: boolean }>;
   coaching: string;
   memoOptions: string[];
   diary: string;
@@ -553,41 +537,106 @@ const DiaryScreen = () => {
   const [isMemoModalVisible, setIsMemoModalVisible] = useState(false);
   const [isDiaryModalVisible, setIsDiaryModalVisible] = useState(false);
   const [sleepDataMap, setSleepDataMap] = useState<SleepDataMap>({});
+  const [serverSleepDates, setServerSleepDates] = useState<string[]>([]);
+  const [allSleepRecords, setAllSleepRecords] = useState<any[]>([]);
   const animatedHeight = useRef(new Animated.Value(0)).current;
 
-  // 현재 선택된 날짜의 데이터 가져오기
-  const getDateKey = (date: Date) => {
-    return date.toISOString().split("T")[0];
+  const { data: fitbitData } = useFitbitSleepByDate(selectedDate);
+
+  // ✅ 오늘 날짜
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  // ✅ 미래 날짜 여부
+  const isFutureDate = (date: Date) => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return d > today;
   };
+
+  const getDateKey = (date: Date) => date.toISOString().split("T")[0];
 
   const getCurrentSleepData = useCallback((): SleepData => {
     const dateKey = getDateKey(selectedDate);
     const existingData = sleepDataMap[dateKey];
 
-    if (existingData) {
-      return existingData;
+    const serverRecord = allSleepRecords.find(
+      (r: any) => r.SLEEP_DATE === dateKey,
+    );
+
+    if (serverRecord) {
+      const start = new Date(serverRecord.START_TIME);
+      const end = new Date(serverRecord.END_TIME);
+      const toAmPm = (hour: number): "AM" | "PM" => (hour >= 12 ? "PM" : "AM");
+      const to12Hour = (hour: number) => hour % 12 || 12;
+      const total = serverRecord.MINUTES_ASLEEP;
+      const deepPct =
+        total > 0
+          ? Math.round((serverRecord.DEEP_SLEEP_MINUTES / total) * 100)
+          : 0;
+      const lightPct =
+        total > 0
+          ? Math.round((serverRecord.LIGHT_SLEEP_MINUTES / total) * 100)
+          : 0;
+      const remPct =
+        total > 0
+          ? Math.round((serverRecord.REM_SLEEP_MINUTES / total) * 100)
+          : 0;
+      const wakePct =
+        total > 0 ? Math.round((serverRecord.WAKE_MINUTES / total) * 100) : 0;
+
+      return {
+        quality: serverRecord.EFFICIENCY,
+        totalSleepTime: { hours: Math.floor(total / 60), minutes: total % 60 },
+        timeInBed: {
+          hours: Math.floor(serverRecord.TIME_IN_BED / 60),
+          minutes: serverRecord.TIME_IN_BED % 60,
+        },
+        sleepGoal: existingData?.sleepGoal ?? { hours: 7, minutes: 30 },
+        bedtime: {
+          hour: to12Hour(start.getHours()),
+          minute: start.getMinutes(),
+          ampm: toAmPm(start.getHours()),
+        },
+        wakeTime: {
+          hour: to12Hour(end.getHours()),
+          minute: end.getMinutes(),
+          ampm: toAmPm(end.getHours()),
+        },
+        analysis: {
+          regularity: "-",
+          heartRate: "-",
+          temperatureChange: "-",
+          temperatureStability: "-",
+          sleepLatency: `${serverRecord.SLEEP_LATENCY_MINUTES ?? 0}분`,
+          deepSleep: `${deepPct}%`,
+          lightSleep: `${lightPct}%`,
+          remSleep: `${remPct}%`,
+          awakeTime: `${wakePct}%`,
+          snoring: "-",
+        },
+        snoringSegments: existingData?.snoringSegments ?? [],
+        coaching: existingData?.coaching ?? "수면 데이터를 분석 중입니다.",
+        memoOptions: existingData?.memoOptions ?? [],
+        diary: existingData?.diary ?? "",
+      };
     }
 
-    // 기본 데이터 생성 (랜덤하게 약간씩 변동)
+    if (existingData) return existingData;
+
     const dayOfMonth = selectedDate.getDate();
-    const baseQuality = 65 + (dayOfMonth % 20); // 65-84 범위
+    const baseQuality = 65 + (dayOfMonth % 20);
     const baseHours = 6 + Math.floor(dayOfMonth % 3);
     const baseMinutes = 30 + (dayOfMonth % 30);
 
     return {
       quality: Math.min(100, baseQuality),
-      totalSleepTime: {
-        hours: baseHours,
-        minutes: baseMinutes,
-      },
-      timeInBed: {
-        hours: baseHours + 1,
-        minutes: (baseMinutes + 20) % 60,
-      },
-      sleepGoal: {
-        hours: 7,
-        minutes: 30,
-      },
+      totalSleepTime: { hours: baseHours, minutes: baseMinutes },
+      timeInBed: { hours: baseHours + 1, minutes: (baseMinutes + 20) % 60 },
+      sleepGoal: { hours: 7, minutes: 30 },
       bedtime: {
         hour: 11 + (dayOfMonth % 2),
         minute: 10 + (dayOfMonth % 20),
@@ -599,46 +648,32 @@ const DiaryScreen = () => {
         ampm: "AM" as const,
       },
       analysis: {
-        regularity: `${85 + (dayOfMonth % 10)}%`,
-        heartRate: `${60 + (dayOfMonth % 10)}`,
-        temperatureChange: `${1 + (dayOfMonth % 2)}°C`,
-        temperatureStability: `36°C / ${45 + (dayOfMonth % 10)}%`,
-        sleepLatency: `${15 + (dayOfMonth % 15)}분`,
-        deepSleep: `${20 + (dayOfMonth % 10)}%`,
-        lightSleep: `${45 + (dayOfMonth % 10)}%`,
-        remSleep: `${20 + (dayOfMonth % 10)}%`,
-        awakeTime: `${15 + (dayOfMonth % 10)}%`,
-        snoring: `${2 + (dayOfMonth % 2)}시간 ${15 + (dayOfMonth % 45)}분`,
+        regularity: "-",
+        heartRate: "-",
+        temperatureChange: "-",
+        temperatureStability: "-",
+        sleepLatency: "-",
+        deepSleep: "-",
+        lightSleep: "-",
+        remSleep: "-",
+        awakeTime: "-",
+        snoring: "-",
       },
-      snoringSegments: [
-        { time: "02:14 AM", isPlaying: false },
-        { time: "03:45 AM", isPlaying: false },
-      ],
-      coaching:
-        "깊은 잠이 줄어들었습니다.\n저녁에는 휴대폰 사용을 줄이고, 따뜻한 차로 마음을 안정시켜보세요.",
+      snoringSegments: [],
+      coaching: "수면 데이터를 분석 중입니다.",
       memoOptions: [],
       diary: "",
     };
-  }, [selectedDate, sleepDataMap]);
+  }, [selectedDate, sleepDataMap, allSleepRecords]);
 
   const currentSleepData = getCurrentSleepData();
 
-  // 데이터 저장
   const saveSleepData = useCallback(
     async (date: Date, data: Partial<SleepData>) => {
       const dateKey = getDateKey(date);
-      const updatedData = {
-        ...currentSleepData,
-        ...data,
-      };
-
-      const newDataMap = {
-        ...sleepDataMap,
-        [dateKey]: updatedData,
-      };
-
+      const updatedData = { ...currentSleepData, ...data };
+      const newDataMap = { ...sleepDataMap, [dateKey]: updatedData };
       setSleepDataMap(newDataMap);
-
       try {
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newDataMap));
       } catch (error) {
@@ -648,23 +683,34 @@ const DiaryScreen = () => {
     [currentSleepData, sleepDataMap],
   );
 
-  // 데이터 로드
   useEffect(() => {
-    const loadSleepData = async () => {
+    const loadData = async () => {
       try {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          setSleepDataMap(JSON.parse(stored));
+        if (stored) setSleepDataMap(JSON.parse(stored));
+
+        const memberId = await getMemberId();
+        const _controller = new Controller({
+          modelName: "SleepRecord",
+          modelId: "sleep_record",
+        });
+        const res = await _controller.findAll({
+          APP_MEMBER_IDENTIFICATION_CODE: memberId,
+        });
+        console.log("findAll 응답:", JSON.stringify(res?.data, null, 2)); // ✅ 추가
+
+        if (res?.result) {
+          setAllSleepRecords(res.result.rows);
+          const dates = res.result.rows.map((r: any) => r.SLEEP_DATE);
+          setServerSleepDates(dates);
         }
       } catch (error) {
         console.error("데이터 로드 실패:", error);
       }
     };
-
-    loadSleepData();
+    loadData();
   }, []);
 
-  // 수면 품질 계산
   const sleepQuality = currentSleepData.quality;
   const circleRadius = 50;
   const circleCircumference = 2 * Math.PI * circleRadius;
@@ -695,12 +741,7 @@ const DiaryScreen = () => {
       "11월",
       "12월",
     ];
-
-    const weekday = weekdays[date.getDay()];
-    const month = months[date.getMonth()];
-    const day = date.getDate();
-
-    return `${weekday} ${month} ${day}일`;
+    return `${weekdays[date.getDay()]} ${months[date.getMonth()]} ${date.getDate()}일`;
   };
 
   const calculateTimeDifference = () => {
@@ -708,37 +749,25 @@ const DiaryScreen = () => {
     const totalMinutes = totalSleepTime.hours * 60 + totalSleepTime.minutes;
     const goalMinutes = sleepGoal.hours * 60 + sleepGoal.minutes;
     const diffMinutes = totalMinutes - goalMinutes;
-
-    if (diffMinutes === 0) {
-      return "목표 달성";
-    }
-
+    if (diffMinutes === 0) return "목표 달성";
     const absDiff = Math.abs(diffMinutes);
     const hours = Math.floor(absDiff / 60);
     const minutes = absDiff % 60;
-
     const sign = diffMinutes > 0 ? "+" : "-";
-    if (hours > 0 && minutes > 0) {
-      return `${sign}${hours}시간 ${minutes}분`;
-    } else if (hours > 0) {
-      return `${sign}${hours}시간`;
-    } else {
-      return `${sign}${minutes}분`;
-    }
+    if (hours > 0 && minutes > 0) return `${sign}${hours}시간 ${minutes}분`;
+    if (hours > 0) return `${sign}${hours}시간`;
+    return `${sign}${minutes}분`;
   };
 
   const getWeekDates = (date: Date) => {
     const currentDay = date.getDay();
     const startOfWeek = new Date(date);
     startOfWeek.setDate(date.getDate() - currentDay);
-
-    const weekDates: Date[] = [];
-    for (let i = 0; i < 7; i++) {
-      const weekDate = new Date(startOfWeek);
-      weekDate.setDate(startOfWeek.getDate() + i);
-      weekDates.push(weekDate);
-    }
-    return weekDates;
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(startOfWeek);
+      d.setDate(startOfWeek.getDate() + i);
+      return d;
+    });
   };
 
   const getMonthDates = (date: Date) => {
@@ -746,31 +775,25 @@ const DiaryScreen = () => {
     const month = date.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
-
     const dates: (Date | null)[] = [];
-    for (let i = 0; i < startingDayOfWeek; i++) dates.push(null);
-    for (let i = 1; i <= daysInMonth; i++) dates.push(new Date(year, month, i));
+    for (let i = 0; i < firstDay.getDay(); i++) dates.push(null);
+    for (let i = 1; i <= lastDay.getDate(); i++)
+      dates.push(new Date(year, month, i));
     return dates;
   };
 
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
   const monthDates = useMemo(() => getMonthDates(selectedDate), [selectedDate]);
+  const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
 
   const hasData = (date: Date) => {
     const dateKey = getDateKey(date);
-    return !!sleepDataMap[dateKey];
-  };
-
-  const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
+    return !!sleepDataMap[dateKey] || serverSleepDates.includes(dateKey);
   };
 
   const toggleCalendar = () => {
     const toValue = isExpanded ? 0 : 1;
     setIsExpanded(!isExpanded);
-
     Animated.timing(animatedHeight, {
       toValue,
       duration: 300,
@@ -783,18 +806,10 @@ const DiaryScreen = () => {
     outputRange: [60, 280],
   });
 
-  const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
-
-  // 분석 데이터를 현재 선택된 날짜의 데이터로 구성
   const analysisGroups = useMemo(() => {
     const { analysis, bedtime, wakeTime } = currentSleepData;
-    const bedtimeStr = `${bedtime.ampm === "AM" ? "오전" : "오후"} ${
-      bedtime.hour
-    }:${bedtime.minute.toString().padStart(2, "0")}`;
-    const wakeTimeStr = `${wakeTime.ampm === "AM" ? "오전" : "오후"} ${
-      wakeTime.hour
-    }:${wakeTime.minute.toString().padStart(2, "0")}`;
-
+    const bedtimeStr = `${bedtime.ampm === "AM" ? "오전" : "오후"} ${bedtime.hour}:${bedtime.minute.toString().padStart(2, "0")}`;
+    const wakeTimeStr = `${wakeTime.ampm === "AM" ? "오전" : "오후"} ${wakeTime.hour}:${wakeTime.minute.toString().padStart(2, "0")}`;
     return [
       [
         { label: "수면 규칙성", value: analysis.regularity },
@@ -811,7 +826,7 @@ const DiaryScreen = () => {
       [
         { label: "깊은 수면", value: analysis.deepSleep },
         { label: "얕은 수면", value: analysis.lightSleep },
-        { label: "기상 시간", value: analysis.awakeTime },
+        { label: "자다 깸", value: analysis.awakeTime },
         { label: "렘수면", value: analysis.remSleep },
       ],
     ];
@@ -820,106 +835,111 @@ const DiaryScreen = () => {
   const renderAnalysisBlock = (
     items: { label: string; value: string }[],
     isLast?: boolean,
-  ) => {
-    return (
-      <View style={{ marginBottom: isLast ? 0 : 16 }}>
-        <AnalysisTable>
-          <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-            {items.map((item, idx) => {
-              const isLeft = idx % 2 === 0;
-              const isTopRow = idx < 2;
+  ) => (
+    <View style={{ marginBottom: isLast ? 0 : 16 }}>
+      <AnalysisTable>
+        <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+          {items.map((item, idx) => (
+            <AnalysisCell
+              key={`${item.label}-${idx}`}
+              showRightBorder={idx % 2 === 0}
+              showBottomBorder={idx < 2}
+            >
+              <AnalysisCellLabel>{item.label}</AnalysisCellLabel>
+              <AnalysisCellValue>{item.value}</AnalysisCellValue>
+            </AnalysisCell>
+          ))}
+        </View>
+      </AnalysisTable>
+    </View>
+  );
 
-              return (
-                <AnalysisCell
-                  key={`${item.label}-${idx}`}
-                  showRightBorder={isLeft}
-                  showBottomBorder={isTopRow}
-                >
-                  <AnalysisCellLabel>{item.label}</AnalysisCellLabel>
-                  <AnalysisCellValue>{item.value}</AnalysisCellValue>
-                </AnalysisCell>
-              );
-            })}
-          </View>
-        </AnalysisTable>
-      </View>
-    );
-  };
-
-  // 수면 단계 그래프 데이터 생성
   const generateSleepStageData = useCallback(() => {
-    const dayOfMonth = selectedDate.getDate();
-    const hours = 7; // 7시간 수면
-    const points = 50; // 50개 포인트 (더 부드럽게)
+    const dateKey = getDateKey(selectedDate);
+    const serverRecord = allSleepRecords.find(
+      (r: any) => r.SLEEP_DATE === dateKey,
+    );
 
-    // 수면 단계 값: 0 = 깨어있음, 1 = 얕은 수면, 2 = 깊은 수면
+    if (serverRecord?.SLEEP_LEVELS_DATA?.length > 0) {
+      const levels = serverRecord.SLEEP_LEVELS_DATA;
+      const points = Math.min(levels.length, 50);
+      const step = Math.max(1, Math.floor(levels.length / points));
+      const lightSleep: number[] = [];
+      const deepSleep: number[] = [];
+      for (let i = 0; i < points; i++) {
+        const level = levels[Math.min(i * step, levels.length - 1)];
+        switch (level.level) {
+          case "deep":
+            lightSleep.push(0.2);
+            deepSleep.push(0.7);
+            break;
+          case "light":
+            lightSleep.push(0.5);
+            deepSleep.push(0.0);
+            break;
+          case "rem":
+            lightSleep.push(0.4);
+            deepSleep.push(0.2);
+            break;
+          case "wake":
+          default:
+            lightSleep.push(0.0);
+            deepSleep.push(0.0);
+            break;
+        }
+      }
+      return { lightSleep, deepSleep };
+    }
+
+    const dayOfMonth = selectedDate.getDate();
+    const points = 50;
     const lightSleep: number[] = [];
     const deepSleep: number[] = [];
-
-    // 자연스러운 수면 패턴 생성
     for (let i = 0; i < points; i++) {
-      const progress = i / points;
       const variation = Math.sin(i * 0.3 + dayOfMonth * 0.1) * 0.15;
-
       if (i < 5) {
-        // 처음: 깨어있음
         lightSleep.push(0);
         deepSleep.push(0);
       } else if (i < 15) {
-        // 얕은 수면으로 전환
-        const lightProgress = (i - 5) / 10;
-        lightSleep.push(0.3 + lightProgress * 0.4 + variation);
+        const p = (i - 5) / 10;
+        lightSleep.push(0.3 + p * 0.4 + variation);
         deepSleep.push(0);
       } else if (i < 30) {
-        // 깊은 수면 (점진적 증가 후 감소)
-        const deepProgress = (i - 15) / 15;
-        const deepValue = Math.sin(deepProgress * Math.PI) * 0.6;
-        deepSleep.push(deepValue + variation * 0.5);
+        const p = (i - 15) / 15;
+        deepSleep.push(Math.sin(p * Math.PI) * 0.6 + variation * 0.5);
         lightSleep.push(0.2 + variation);
       } else if (i < 40) {
-        // 얕은 수면으로 복귀
-        const lightProgress = (i - 30) / 10;
-        lightSleep.push(0.3 + lightProgress * 0.3 + variation);
-        deepSleep.push(0.1 - lightProgress * 0.1);
+        const p = (i - 30) / 10;
+        lightSleep.push(0.3 + p * 0.3 + variation);
+        deepSleep.push(0.1 - p * 0.1);
       } else {
-        // 얕은 수면
         lightSleep.push(0.5 + variation);
         deepSleep.push(0);
       }
     }
-
-    return { lightSleep, deepSleep, hours, points };
-  }, [selectedDate]);
+    return { lightSleep, deepSleep };
+  }, [selectedDate, allSleepRecords]);
 
   const sleepStageData = generateSleepStageData();
 
-  // 수면 단계 그래프 렌더링
   const renderSleepStageGraph = () => {
     const graphWidth = 300;
     const graphHeight = 96;
     const padding = 12;
     const chartWidth = graphWidth - padding * 2;
     const chartHeight = graphHeight - padding * 2;
-
-    const { lightSleep, deepSleep, points } = sleepStageData;
+    const { lightSleep, deepSleep } = sleepStageData;
+    const points = lightSleep.length;
     const pointSpacing = chartWidth / (points - 1);
 
-    // Y축 위치 계산 (0=아래, 1=위)
-    const getY = (value: number) => {
-      const normalized = Math.max(0, Math.min(1, value));
-      return padding + chartHeight - normalized * chartHeight;
-    };
+    const getY = (value: number) =>
+      padding + chartHeight - Math.max(0, Math.min(1, value)) * chartHeight;
 
-    // 부드러운 라인 경로 생성
     const createLinePath = (values: number[]) => {
-      if (values.length === 0) return "";
-
       let path = "";
-
       for (let i = 0; i < values.length; i++) {
         const x = padding + i * pointSpacing;
         const y = getY(values[i]);
-
         if (i === 0) {
           path += `M ${x} ${y}`;
         } else {
@@ -928,31 +948,17 @@ const DiaryScreen = () => {
           const nextX =
             i < values.length - 1 ? padding + (i + 1) * pointSpacing : x;
           const nextY = i < values.length - 1 ? getY(values[i + 1]) : y;
-
-          // 제어점 계산 (부드러운 곡선)
-          const cp1x = prevX + (x - prevX) * 0.5;
-          const cp1y = prevY;
-          const cp2x = x - (nextX - x) * 0.5;
-          const cp2y = y;
-
-          path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x} ${y}`;
+          path += ` C ${prevX + (x - prevX) * 0.5} ${prevY}, ${x - (nextX - x) * 0.5} ${nextY}, ${x} ${y}`;
         }
       }
-
       return path;
     };
 
-    // 부드러운 영역 경로 생성
     const createAreaPath = (values: number[]) => {
-      if (values.length === 0) return "";
-
       let path = `M ${padding} ${padding + chartHeight}`;
-
-      // 위쪽 경로 (부드러운 곡선)
       for (let i = 0; i < values.length; i++) {
         const x = padding + i * pointSpacing;
         const y = getY(values[i]);
-
         if (i === 0) {
           path += ` L ${x} ${y}`;
         } else {
@@ -961,33 +967,24 @@ const DiaryScreen = () => {
           const nextX =
             i < values.length - 1 ? padding + (i + 1) * pointSpacing : x;
           const nextY = i < values.length - 1 ? getY(values[i + 1]) : y;
-
-          // 제어점 계산 (부드러운 곡선)
-          const cp1x = prevX + (x - prevX) * 0.5;
-          const cp1y = prevY;
-          const cp2x = x - (nextX - x) * 0.5;
-          const cp2y = y;
-
-          path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x} ${y}`;
+          path += ` C ${prevX + (x - prevX) * 0.5} ${prevY}, ${x - (nextX - x) * 0.5} ${nextY}, ${x} ${y}`;
         }
       }
-
-      // 아래쪽으로 닫기
-      const lastX = padding + (values.length - 1) * pointSpacing;
-      path += ` L ${lastX} ${padding + chartHeight} Z`;
-
+      path += ` L ${padding + (values.length - 1) * pointSpacing} ${padding + chartHeight} L ${padding} ${padding + chartHeight} Z`;
       return path;
     };
 
-    // 얕은 수면 + 깊은 수면 결합
     const combinedSleep = lightSleep.map((light, i) =>
       Math.min(1, light + deepSleep[i]),
+    );
+    const dateKey = getDateKey(selectedDate);
+    const serverRecord = allSleepRecords.find(
+      (r: any) => r.SLEEP_DATE === dateKey,
     );
 
     return (
       <GraphContainer>
         <Svg width={graphWidth} height={graphHeight}>
-          {/* 배경 그리드 */}
           {[0, 1, 2].map((level) => (
             <Line
               key={`grid-${level}`}
@@ -999,22 +996,16 @@ const DiaryScreen = () => {
               strokeWidth="1"
             />
           ))}
-
-          {/* 전체 수면 영역 (얕은 수면 + 깊은 수면) */}
           <Path
             d={createAreaPath(combinedSleep)}
             fill="#7353FF"
             fillOpacity="0.3"
           />
-
-          {/* 깊은 수면 영역 */}
           <Path
             d={createAreaPath(deepSleep)}
             fill="#25C3FB"
             fillOpacity="0.5"
           />
-
-          {/* 얕은 수면 라인 */}
           <Path
             d={createLinePath(lightSleep)}
             fill="none"
@@ -1023,8 +1014,6 @@ const DiaryScreen = () => {
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-
-          {/* 깊은 수면 라인 */}
           <Path
             d={createLinePath(deepSleep)}
             fill="none"
@@ -1033,15 +1022,13 @@ const DiaryScreen = () => {
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-
-          {/* X축 시간 라벨 */}
           <SvgText
             x={padding}
             y={graphHeight - 2}
             fontSize="10"
             fill={theme.colors.textSecondary}
           >
-            2am
+            {serverRecord ? "취침" : "2am"}
           </SvgText>
           <SvgText
             x={padding + chartWidth}
@@ -1050,7 +1037,9 @@ const DiaryScreen = () => {
             fill={theme.colors.textSecondary}
             textAnchor="end"
           >
-            7 (시간)
+            {serverRecord
+              ? `${currentSleepData.wakeTime.hour}시 (기상)`
+              : "7 (시간)"}
           </SvgText>
         </Svg>
       </GraphContainer>
@@ -1104,18 +1093,18 @@ const DiaryScreen = () => {
                             </DateItemContainer>
                           );
                         }
-
                         const isSelected =
                           date.toDateString() === selectedDate.toDateString();
                         const dateHasData = hasData(date);
-
+                        const isFuture = isFutureDate(date); // ✅
                         return (
                           <DateItemContainer key={index}>
                             <DateItem
                               selected={isSelected}
                               hasData={dateHasData}
-                              onPress={() => handleDateSelect(date)}
-                              activeOpacity={0.7}
+                              onPress={() => !isFuture && setSelectedDate(date)} // ✅
+                              activeOpacity={isFuture ? 1 : 0.7} // ✅
+                              style={{ opacity: isFuture ? 0.3 : 1 }} // ✅
                             >
                               <DateText
                                 selected={isSelected}
@@ -1131,14 +1120,15 @@ const DiaryScreen = () => {
                         const isSelected =
                           date.toDateString() === selectedDate.toDateString();
                         const dateHasData = hasData(date);
-
+                        const isFuture = isFutureDate(date); // ✅
                         return (
                           <DateItemContainer key={index}>
                             <DateItem
                               selected={isSelected}
                               hasData={dateHasData}
-                              onPress={() => handleDateSelect(date)}
-                              activeOpacity={0.7}
+                              onPress={() => !isFuture && setSelectedDate(date)} // ✅
+                              activeOpacity={isFuture ? 1 : 0.7} // ✅
+                              style={{ opacity: isFuture ? 0.3 : 1 }} // ✅
                             >
                               <DateText
                                 selected={isSelected}
@@ -1179,7 +1169,6 @@ const DiaryScreen = () => {
                 fill={theme.colors.secondary}
               />
             </InfoIconContainer>
-
             <SleepSummaryContainer>
               <SleepSummaryLeft>
                 <QualityCircleContainer>
@@ -1209,13 +1198,11 @@ const DiaryScreen = () => {
                       transform="rotate(-90 60 60)"
                     />
                   </Svg>
-
                   <QualityCircleContent>
                     <QualityText>{sleepQuality}%</QualityText>
                   </QualityCircleContent>
                 </QualityCircleContainer>
               </SleepSummaryLeft>
-
               <SleepSummaryRight>
                 <SleepSummaryItem>
                   <SleepSummaryLabel>총 수면 시간</SleepSummaryLabel>
@@ -1238,39 +1225,30 @@ const DiaryScreen = () => {
           {/* 탭 컨테이너 */}
           <TabContentContainer>
             <TabsContainer>
-              <Tab
-                active={activeTab === "analysis"}
-                onPress={() => setActiveTab("analysis")}
-                activeOpacity={1}
-              >
-                <TabText active={activeTab === "analysis"}>분석</TabText>
-              </Tab>
-              <Tab
-                active={activeTab === "diary"}
-                onPress={() => setActiveTab("diary")}
-                activeOpacity={1}
-              >
-                <TabText active={activeTab === "diary"}>일지</TabText>
-              </Tab>
-              <Tab
-                active={activeTab === "coaching"}
-                onPress={() => setActiveTab("coaching")}
-                activeOpacity={1}
-              >
-                <TabText active={activeTab === "coaching"}>코칭</TabText>
-              </Tab>
-              <Tab
-                active={activeTab === "goal"}
-                onPress={() => setActiveTab("goal")}
-                activeOpacity={1}
-              >
-                <TabText active={activeTab === "goal"}>수면 목표</TabText>
-              </Tab>
+              {(["analysis", "diary", "coaching", "goal"] as TabKey[]).map(
+                (tab) => (
+                  <Tab
+                    key={tab}
+                    active={activeTab === tab}
+                    onPress={() => setActiveTab(tab)}
+                    activeOpacity={1}
+                  >
+                    <TabText active={activeTab === tab}>
+                      {tab === "analysis"
+                        ? "분석"
+                        : tab === "diary"
+                          ? "일지"
+                          : tab === "coaching"
+                            ? "코칭"
+                            : "수면 목표"}
+                    </TabText>
+                  </Tab>
+                ),
+              )}
             </TabsContainer>
 
             {activeTab === "analysis" && (
               <>
-                {/* 수면 단계 카드 */}
                 <Card>
                   <CardHeader>
                     {React.createElement(
@@ -1280,9 +1258,7 @@ const DiaryScreen = () => {
                     )}
                     <CardTitle>수면 단계</CardTitle>
                   </CardHeader>
-
                   <SleepStageGraph>{renderSleepStageGraph()}</SleepStageGraph>
-
                   <GraphLegend>
                     <LegendItem style={{ marginRight: 16 }}>
                       <LegendColor color="#7353FF" />
@@ -1295,10 +1271,8 @@ const DiaryScreen = () => {
                   </GraphLegend>
                 </Card>
 
-                {/* ✅ 수면 단계 밑 가로선 (위/아래 20px) */}
                 <SectionDivider />
 
-                {/* 수면 분석 카드 (4개씩 3블록) */}
                 <Card>
                   <CardHeader>
                     {React.createElement(
@@ -1308,7 +1282,6 @@ const DiaryScreen = () => {
                     )}
                     <CardTitle>수면 분석</CardTitle>
                   </CardHeader>
-
                   {analysisGroups.map((group, idx) =>
                     renderAnalysisBlock(
                       group,
@@ -1316,8 +1289,10 @@ const DiaryScreen = () => {
                     ),
                   )}
                 </Card>
+
                 <SectionDivider />
-                <Card>
+
+                {/* <Card>
                   <CardHeader>
                     {React.createElement(
                       require("../../../assets/icon/chart.svg").default ||
@@ -1328,7 +1303,6 @@ const DiaryScreen = () => {
                       코골이 구간 {currentSleepData.snoringSegments.length}
                     </CardTitle>
                   </CardHeader>
-
                   {currentSleepData.snoringSegments.map((segment, index) => (
                     <SnoringItem key={index}>
                       <SnoringTime>{segment.time}</SnoringTime>
@@ -1356,13 +1330,12 @@ const DiaryScreen = () => {
                       </SnoringControls>
                     </SnoringItem>
                   ))}
-                </Card>
+                </Card> */}
               </>
             )}
 
             {activeTab === "diary" && (
               <>
-                {/* 수면 메모 섹션 */}
                 <SleepMemoSection>
                   <SectionHeader>
                     <SectionTitle>수면 메모</SectionTitle>
@@ -1398,7 +1371,6 @@ const DiaryScreen = () => {
                   </MemoPillsContainer>
                 </SleepMemoSection>
 
-                {/* 수면 다이어리 섹션 */}
                 <SleepDiarySection>
                   <DiaryHeader>
                     <SectionTitle>수면 다이어리</SectionTitle>
@@ -1469,13 +1441,9 @@ const DiaryScreen = () => {
                   <GoalTitleText>나에게 맞는 수면 목표</GoalTitleText>를 정하면
                   {"\n"}더 건강한 하루를 만들 수 있습니다.
                 </GoalMessageContainer>
-
                 <Button
                   variant="primary"
-                  onPress={() => {
-                    // 수면 목표 설정 화면으로 이동하는 로직
-                    console.log("수면 목표 설정하기");
-                  }}
+                  onPress={() => console.log("수면 목표 설정하기")}
                 >
                   수면 목표 설정하기
                 </Button>
@@ -1485,36 +1453,29 @@ const DiaryScreen = () => {
         </Content>
       </ScrollableContent>
 
-      {/* 수면 품질 정보 모달 */}
       <SleepQualityInfoModal
         visible={isQualityModalVisible}
         onClose={() => setIsQualityModalVisible(false)}
       />
-
-      {/* 수면 메모 모달 */}
       <SleepMemoModal
         visible={isMemoModalVisible}
         onClose={() => setIsMemoModalVisible(false)}
         title="수면 메모"
         buttonText="저장"
         selectedOptions={currentSleepData.memoOptions}
-        onOptionsChange={(options) => {
-          saveSleepData(selectedDate, { memoOptions: options });
-        }}
+        onOptionsChange={(options) =>
+          saveSleepData(selectedDate, { memoOptions: options })
+        }
       />
-
-      {/* 수면 다이어리 모달 */}
       <SleepDiaryModal
         visible={isDiaryModalVisible}
         onClose={() => setIsDiaryModalVisible(false)}
         title="수면 다이어리"
         diaryText={currentSleepData.diary}
-        onDiaryTextChange={(text) => {
-          saveSleepData(selectedDate, { diary: text });
-        }}
-        onSave={() => {
-          setIsDiaryModalVisible(false);
-        }}
+        onDiaryTextChange={(text) =>
+          saveSleepData(selectedDate, { diary: text })
+        }
+        onSave={() => setIsDiaryModalVisible(false)}
       />
     </Screen>
   );

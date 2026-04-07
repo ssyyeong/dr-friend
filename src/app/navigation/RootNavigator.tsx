@@ -105,6 +105,8 @@ export type ProfileStackParamList = {
   QnaWrite: undefined;
   Survey: undefined;
   SelfTest: { id?: string };
+  SurveyQuestion: { id?: string };
+  SurveyResult: { result: any };
   SurveyResultProfile: { result: any };
   CustomRoutine: { result: any };
   SleepGoal: undefined;
@@ -194,6 +196,11 @@ const ProfileStackNavigator = () => {
       <ProfileStack.Screen name="QnaWrite" component={QnaWriteScreen} />
       <ProfileStack.Screen name="Survey" component={SurveyScreen} />
       <ProfileStack.Screen name="SelfTest" component={SelfTestScreen} />
+      <ProfileStack.Screen
+        name="SurveyQuestion"
+        component={SurveyQuestionScreen}
+      />
+      <ProfileStack.Screen name="SurveyResult" component={SurveyResultScreen} />
       <ProfileStack.Screen
         name="SurveyResultProfile"
         component={SurveyResultProfileScreen}

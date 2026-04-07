@@ -171,7 +171,7 @@ const SleepMemoModal: React.FC<SleepMemoModalProps> = ({
   onButtonPress,
 }) => {
   const theme = useTheme();
-
+  const insets = useSafeAreaInsets();
   const handleOptionToggle = (optionId: string) => {
     if (selectedOptions.includes(optionId)) {
       onOptionsChange(selectedOptions.filter((id) => id !== optionId));
@@ -202,6 +202,7 @@ const SleepMemoModal: React.FC<SleepMemoModalProps> = ({
         <ModalCard
           style={{
             maxHeight: "80%",
+            paddingBottom: insets.bottom + 24, // ✅ 안드로이드 하단 영역만큼 추가
           }}
         >
           <ModalHeader>

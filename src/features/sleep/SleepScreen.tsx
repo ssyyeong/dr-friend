@@ -10,7 +10,6 @@ import ToggleSwitch from "../../shared/components/common/ToggleSwitch";
 import { SleepStackParamList } from "../../app/navigation/RootNavigator";
 import SleepMemoModal from "../diary/components/SleepMemoModal";
 
-// 웹 환경이 아닐 때만 알림 핸들러 설정
 if (Platform.OS !== "web") {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -102,10 +101,6 @@ const PickerColumn = styled.View`
   overflow: hidden;
 `;
 
-const PickerScrollView = styled.ScrollView.attrs(() => ({}))`
-  flex: 1;
-`;
-
 const PickerItem = styled.View`
   height: 50px;
   justify-content: center;
@@ -153,40 +148,39 @@ const SleepScreen = () => {
   const navigation = useNavigation<SleepScreenNavigationProp>();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [alarmTime, setAlarmTime] = useState(new Date());
+  const [alarmEnabled, setAlarmEnabled] = useState(true);
   const [snoringRecordingEnabled, setSnoringRecordingEnabled] = useState(false);
   const [isMemoModalVisible, setIsMemoModalVisible] = useState(false);
   const [selectedMemoOptions, setSelectedMemoOptions] = useState<string[]>([]);
 
   const [selectedHour, setSelectedHour] = useState(9);
-  const [selectedMinute, setSelectedMinute] = useState(41);
+  const [selectedMinute, setSelectedMinute] = useState(0);
   const [selectedAmPm, setSelectedAmPm] = useState<"AM" | "PM">("AM");
 
+  // ✅ ScrollView 직접 ref (styled.ScrollView는 ref 전달 안 됨)
   const hourScrollRef = useRef<ScrollView>(null);
   const minuteScrollRef = useRef<ScrollView>(null);
   const amPmScrollRef = useRef<ScrollView>(null);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const [isInitialized, setIsInitialized] = useState(false);
-
+  // 초기 스크롤 위치 설정
   useEffect(() => {
     if (!isInitialized) {
       const hours = alarmTime.getHours();
       const minutes = alarmTime.getMinutes();
       const displayHour = hours % 12 || 12;
-      const ampm = hours >= 12 ? "PM" : "AM";
+      const ampm: "AM" | "PM" = hours >= 12 ? "PM" : "AM";
 
       setSelectedHour(displayHour);
       setSelectedMinute(minutes);
       setSelectedAmPm(ampm);
 
-      // 초기 스크롤 위치 설정
       setTimeout(() => {
         hourScrollRef.current?.scrollTo({
           y: (displayHour - 1) * ITEM_HEIGHT,
@@ -205,10 +199,10 @@ const SleepScreen = () => {
     }
   }, []);
 
+  // 피커 값 변경 시 alarmTime 업데이트
   useEffect(() => {
     if (!isInitialized) return;
 
-    // 선택된 시간/분/AMPM이 변경되면 alarmTime 업데이트
     const hours24 =
       selectedAmPm === "PM"
         ? selectedHour === 12
@@ -219,64 +213,61 @@ const SleepScreen = () => {
           : selectedHour;
 
     const newAlarmTime = new Date();
-    newAlarmTime.setHours(hours24);
-    newAlarmTime.setMinutes(selectedMinute);
-    newAlarmTime.setSeconds(0);
-    newAlarmTime.setMilliseconds(0);
+    newAlarmTime.setHours(hours24, selectedMinute, 0, 0);
 
-    // 값이 실제로 변경된 경우에만 업데이트
     if (
       newAlarmTime.getHours() !== alarmTime.getHours() ||
       newAlarmTime.getMinutes() !== alarmTime.getMinutes()
     ) {
       setAlarmTime(newAlarmTime);
+      // ✅ 알람 시간 변경 시 자동 예약
+      if (alarmEnabled) scheduleAlarm(newAlarmTime);
     }
   }, [selectedHour, selectedMinute, selectedAmPm, isInitialized]);
 
-  const scheduleAlarm = async () => {
-    // 웹 환경에서는 알림 기능을 사용할 수 없음
-    if (Platform.OS === "web") {
-      console.log("웹 환경에서는 알림 기능을 사용할 수 없습니다.");
-      return;
-    }
-
+  // ✅ 알람 예약
+  const scheduleAlarm = async (time?: Date) => {
+    if (Platform.OS === "web") return;
     try {
-      await Notifications.requestPermissionsAsync();
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== "granted") return;
 
       const now = new Date();
-      const alarm = new Date(alarmTime);
-
-      // 오늘 알람 시간이 지났으면 내일로 설정
-      if (alarm <= now) {
-        alarm.setDate(alarm.getDate() + 1);
-      }
+      const alarm = new Date(time ?? alarmTime);
+      if (alarm <= now) alarm.setDate(alarm.getDate() + 1);
 
       await Notifications.cancelAllScheduledNotificationsAsync();
-
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "알람",
           body: "일어날 시간입니다!",
           sound: true,
         },
-        trigger: alarm as any,
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: alarm,
+        },
       });
+      console.log("알람 설정:", alarm.toLocaleString());
     } catch (error) {
       console.error("알람 설정 오류:", error);
     }
   };
 
   const cancelAlarm = async () => {
-    // 웹 환경에서는 알림 기능을 사용할 수 없음
-    if (Platform.OS === "web") {
-      return;
-    }
-
+    if (Platform.OS === "web") return;
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();
     } catch (error) {
       console.error("알람 취소 오류:", error);
     }
+  };
+
+  // 알람 토글 변경 시 예약/취소
+  const handleAlarmToggle = (value: boolean) => {
+    setAlarmEnabled(value);
+    if (value) scheduleAlarm();
+    else cancelAlarm();
   };
 
   const formatTime = (date: Date) => {
@@ -286,9 +277,6 @@ const SleepScreen = () => {
     const displayHours = hours % 12 || 12;
     return {
       time: `${ampm} ${displayHours}:${minutes.toString().padStart(2, "0")}`,
-      hours: displayHours,
-      minutes: minutes,
-      ampm: ampm === "오전" ? "AM" : "PM",
     };
   };
 
@@ -316,166 +304,109 @@ const SleepScreen = () => {
       "11월",
       "12월",
     ];
-
-    const weekday = weekdays[date.getDay()];
-    const month = months[date.getMonth()];
-    const day = date.getDate();
-
-    return `${weekday}, ${month}${day}일`;
+    return `${weekdays[date.getDay()]}, ${months[date.getMonth()]}${date.getDate()}일`;
   };
 
+  // ✅ 스크롤 핸들러
   const handleHourScroll = (event: any) => {
-    if (!event?.nativeEvent?.contentOffset) return;
-    const y = event.nativeEvent.contentOffset.y;
-    const index = Math.round(y / ITEM_HEIGHT);
-    const newHour = Math.max(1, Math.min(12, index + 1));
-    if (newHour !== selectedHour) {
-      setSelectedHour(newHour);
-    }
+    const y = event?.nativeEvent?.contentOffset?.y ?? 0;
+    const newHour = Math.max(1, Math.min(12, Math.round(y / ITEM_HEIGHT) + 1));
+    if (newHour !== selectedHour) setSelectedHour(newHour);
   };
 
   const handleHourScrollEnd = (event: any) => {
-    if (!event?.nativeEvent?.contentOffset) return;
-
-    const y = event.nativeEvent.contentOffset.y;
-    const index = Math.round(y / ITEM_HEIGHT);
-    const newHour = Math.max(1, Math.min(12, index + 1));
-    const targetY = (newHour - 1) * ITEM_HEIGHT;
-
+    const y = event?.nativeEvent?.contentOffset?.y ?? 0;
+    const newHour = Math.max(1, Math.min(12, Math.round(y / ITEM_HEIGHT) + 1));
     setSelectedHour(newHour);
-
-    // 즉시 정확한 위치로 스냅 (애니메이션 없이 먼저)
-    hourScrollRef.current?.scrollTo({
-      y: targetY,
-      animated: false,
-    });
-
-    // 다음 프레임에서 부드럽게 재스냅
-    requestAnimationFrame(() => {
-      hourScrollRef.current?.scrollTo({
-        y: targetY,
-        animated: true,
-      });
-    });
+    const targetY = (newHour - 1) * ITEM_HEIGHT;
+    hourScrollRef.current?.scrollTo({ y: targetY, animated: false });
+    requestAnimationFrame(() =>
+      hourScrollRef.current?.scrollTo({ y: targetY, animated: true }),
+    );
   };
 
   const handleMinuteScroll = (event: any) => {
-    if (!event?.nativeEvent?.contentOffset) return;
-    const y = event.nativeEvent.contentOffset.y;
-    const index = Math.round(y / ITEM_HEIGHT);
-    const newMinute = Math.max(0, Math.min(59, index));
-    if (newMinute !== selectedMinute) {
-      setSelectedMinute(newMinute);
-    }
+    const y = event?.nativeEvent?.contentOffset?.y ?? 0;
+    const newMinute = Math.max(0, Math.min(59, Math.round(y / ITEM_HEIGHT)));
+    if (newMinute !== selectedMinute) setSelectedMinute(newMinute);
   };
 
   const handleMinuteScrollEnd = (event: any) => {
-    if (!event?.nativeEvent?.contentOffset) return;
-
-    const y = event.nativeEvent.contentOffset.y;
-    const index = Math.round(y / ITEM_HEIGHT);
-    const newMinute = Math.max(0, Math.min(59, index));
-    const targetY = newMinute * ITEM_HEIGHT;
-
+    const y = event?.nativeEvent?.contentOffset?.y ?? 0;
+    const newMinute = Math.max(0, Math.min(59, Math.round(y / ITEM_HEIGHT)));
     setSelectedMinute(newMinute);
-
-    // 즉시 정확한 위치로 스냅 (애니메이션 없이 먼저)
-    minuteScrollRef.current?.scrollTo({
-      y: targetY,
-      animated: false,
-    });
-
-    // 다음 프레임에서 부드럽게 재스냅
-    requestAnimationFrame(() => {
-      minuteScrollRef.current?.scrollTo({
-        y: targetY,
-        animated: true,
-      });
-    });
+    const targetY = newMinute * ITEM_HEIGHT;
+    minuteScrollRef.current?.scrollTo({ y: targetY, animated: false });
+    requestAnimationFrame(() =>
+      minuteScrollRef.current?.scrollTo({ y: targetY, animated: true }),
+    );
   };
 
   const handleAmPmScroll = (event: any) => {
-    if (!event?.nativeEvent?.contentOffset) return;
-    const y = event.nativeEvent.contentOffset.y;
-    const index = Math.round(y / ITEM_HEIGHT);
-    const clampedIndex = Math.max(0, Math.min(1, index));
-    const newAmPm = clampedIndex === 0 ? "AM" : "PM";
-    if (newAmPm !== selectedAmPm) {
-      setSelectedAmPm(newAmPm);
-    }
+    const y = event?.nativeEvent?.contentOffset?.y ?? 0;
+    const clampedIndex = Math.max(0, Math.min(1, Math.round(y / ITEM_HEIGHT)));
+    const newAmPm: "AM" | "PM" = clampedIndex === 0 ? "AM" : "PM";
+    if (newAmPm !== selectedAmPm) setSelectedAmPm(newAmPm);
   };
 
   const handleAmPmScrollEnd = (event: any) => {
-    if (!event?.nativeEvent?.contentOffset) return;
-
-    const y = event.nativeEvent.contentOffset.y;
-    const index = Math.round(y / ITEM_HEIGHT);
-    const clampedIndex = Math.max(0, Math.min(1, index));
-    const newAmPm = clampedIndex === 0 ? "AM" : "PM";
-    const targetY = clampedIndex * ITEM_HEIGHT;
-
+    const y = event?.nativeEvent?.contentOffset?.y ?? 0;
+    const clampedIndex = Math.max(0, Math.min(1, Math.round(y / ITEM_HEIGHT)));
+    const newAmPm: "AM" | "PM" = clampedIndex === 0 ? "AM" : "PM";
     setSelectedAmPm(newAmPm);
-
-    // 즉시 정확한 위치로 스냅 (애니메이션 없이 먼저)
-    amPmScrollRef.current?.scrollTo({
-      y: targetY,
-      animated: false,
-    });
-
-    // 다음 프레임에서 부드럽게 재스냅
-    requestAnimationFrame(() => {
-      amPmScrollRef.current?.scrollTo({
-        y: targetY,
-        animated: true,
-      });
-    });
+    const targetY = clampedIndex * ITEM_HEIGHT;
+    amPmScrollRef.current?.scrollTo({ y: targetY, animated: false });
+    requestAnimationFrame(() =>
+      amPmScrollRef.current?.scrollTo({ y: targetY, animated: true }),
+    );
   };
 
+  // ✅ PickerScrollView → ScrollView 직접 사용 (ref 전달 문제 해결)
   const renderPickerItems = (
     items: (string | number)[],
     selectedValue: string | number,
     onScroll: (event: any) => void,
     onScrollEnd: (event: any) => void,
     scrollRef: React.RefObject<ScrollView | null>,
-  ) => {
-    return (
-      <PickerColumn>
-        <SelectionIndicator />
-        <PickerScrollView
-          ref={scrollRef as any}
-          showsVerticalScrollIndicator={false}
-          snapToInterval={ITEM_HEIGHT}
-          snapToAlignment="start"
-          decelerationRate={0.9}
-          onScroll={onScroll}
-          onMomentumScrollEnd={onScrollEnd}
-          onScrollEndDrag={onScrollEnd}
-          bounces={false}
-          scrollEventThrottle={16}
-          pagingEnabled={false}
-          contentContainerStyle={{
-            paddingTop: ITEM_HEIGHT,
-            paddingBottom: ITEM_HEIGHT,
-          }}
-        >
-          {items.map((item, index) => (
-            <PickerItem key={index}>
-              <PickerItemText selected={item === selectedValue}>
-                {item.toString().padStart(2, "0")}
-              </PickerItemText>
-            </PickerItem>
-          ))}
-        </PickerScrollView>
-      </PickerColumn>
-    );
-  };
+  ) => (
+    <PickerColumn>
+      <SelectionIndicator />
+      <ScrollView
+        ref={scrollRef as any}
+        showsVerticalScrollIndicator={false}
+        snapToInterval={ITEM_HEIGHT}
+        snapToAlignment="start"
+        decelerationRate={0.9}
+        onScroll={onScroll}
+        onMomentumScrollEnd={onScrollEnd}
+        onScrollEndDrag={onScrollEnd}
+        bounces={false}
+        scrollEventThrottle={16}
+        nestedScrollEnabled={true} // ✅ 이거 추가
+        contentContainerStyle={{
+          paddingTop: ITEM_HEIGHT,
+          paddingBottom: ITEM_HEIGHT,
+        }}
+      >
+        {items.map((item, index) => (
+          <PickerItem key={index}>
+            <PickerItemText selected={item === selectedValue}>
+              {item.toString().padStart(2, "0")}
+            </PickerItemText>
+          </PickerItem>
+        ))}
+      </ScrollView>
+    </PickerColumn>
+  );
 
   const currentTimeFormatted = formatTime(currentTime);
-  const currentDateFormatted = formatDate(currentTime);
 
   return (
     <Screen>
-      <ScrollableContent showsVerticalScrollIndicator={false}>
+      <ScrollableContent
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}
+      >
         <Content>
           <MoonIconContainer>
             {React.createElement(
@@ -486,7 +417,7 @@ const SleepScreen = () => {
           </MoonIconContainer>
 
           <CurrentTime>{currentTimeFormatted.time}</CurrentTime>
-          <CurrentDate>{currentDateFormatted}</CurrentDate>
+          <CurrentDate>{formatDate(currentTime)}</CurrentDate>
 
           <SleepButtonContainer>
             <Button
@@ -500,6 +431,12 @@ const SleepScreen = () => {
           <SettingCard>
             <SettingHeader>
               <SettingTitle>알림 설정</SettingTitle>
+              {/* ✅ 알림 토글 추가 */}
+              <ToggleSwitch
+                value={alarmEnabled}
+                onValueChange={handleAlarmToggle}
+                size="small"
+              />
             </SettingHeader>
             <TimePickerContainer>
               <TimePickerWrapper>
@@ -542,7 +479,6 @@ const SleepScreen = () => {
         </Content>
       </ScrollableContent>
 
-      {/* 취침 전 메모 모달 */}
       <SleepMemoModal
         visible={isMemoModalVisible}
         onClose={() => setIsMemoModalVisible(false)}
