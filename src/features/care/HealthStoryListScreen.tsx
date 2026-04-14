@@ -1,12 +1,12 @@
-import React, { useState } from "react";
-import styled from "styled-components/native";
+import React, { useState, useEffect } from "react";
+import styled, { useTheme } from "styled-components/native";
 import { SafeAreaView } from "../../shared/components/common/SafeAreaView";
 import { FlatList, Image, TouchableOpacity, View } from "react-native";
 import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { CareStackParamList } from "../../app/navigation/RootNavigator";
 import Header from "../../shared/components/common/Header";
-import { theme } from "../../shared/theme/theme";
+import Controller from "../../services/controller";
 
 type HealthStoryListRouteProp = RouteProp<
   CareStackParamList,
@@ -33,6 +33,7 @@ const DescriptionContainer = styled.View`
 
 const DescriptionTitle = styled.Text`
   font-size: 24px;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.text};
   margin-bottom: 20px;
 `;
@@ -62,7 +63,7 @@ const CategoryText = styled.Text<{ active: boolean }>`
   ${({ active, theme }) =>
     active
       ? `padding-bottom: 16px; border-bottom-width: 2px; border-bottom-color: ${theme.colors.text};`
-      : ""}
+      : "padding-bottom: 16px;"}
 `;
 
 const ListContainer = styled.View`
@@ -84,6 +85,8 @@ const ItemImageContainer = styled.View`
   width: 100%;
   aspect-ratio: 16 / 9;
   position: relative;
+  border-radius: ${({ theme }) => theme.radius.md}px;
+  overflow: hidden;
 `;
 
 const ItemImage = styled(Image)`
@@ -102,46 +105,67 @@ const ItemTitle = styled.Text`
   text-align: left;
 `;
 
+const ItemCategory = styled.Text`
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.gray400};
+  margin-bottom: 4px;
+`;
+
+const EmptyText = styled.Text`
+  font-size: 16px;
+  color: ${({ theme }) => theme.colors.gray400};
+  text-align: center;
+  margin-top: 40px;
+`;
+
 const HealthStoryListScreen = () => {
   const route = useRoute<HealthStoryListRouteProp>();
   const navigation = useNavigation<NavigationProp>();
+  const theme = useTheme();
+
   const [selectedCategory, setSelectedCategory] = useState("수면");
+  const [allItems, setAllItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const categories = ["수면", "건강", "후기", "Dr.Friend"];
 
-  // 임시 데이터 - 실제 API에서 가져와야 함
-  const items = [
-    {
-      id: "1",
-      image: require("../../../assets/image/sing.png"),
-      title: "그라운딩, 어싱 이란?",
-    },
-    {
-      id: "2",
-      image: require("../../../assets/image/fire.png"),
-      title: "꿀잠, 꿀팁",
-    },
-    {
-      id: "3",
-      image: require("../../../assets/image/sing.png"),
-      title: "그라운딩, 어싱 이란?",
-    },
-    {
-      id: "4",
-      image: require("../../../assets/image/fire.png"),
-      title: "건강한 수면 습관 만들기",
-    },
-    {
-      id: "5",
-      image: require("../../../assets/image/sing.png"),
-      title: "스트레스 해소 방법",
-    },
-    {
-      id: "6",
-      image: require("../../../assets/image/fire.png"),
-      title: "명상과 마음챙김",
-    },
-  ];
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        setLoading(true);
+        const controller = new Controller({
+          modelName: "HealthStoryContent",
+          modelId: "health_story_content",
+        });
+        const response = await controller.findAll({ IS_EXPOSED: "Y" });
+        if (response?.status === 200) {
+          const rows = response.result?.rows ?? response.result ?? [];
+          setAllItems(
+            rows.map((item: any) => ({
+              id: String(item.HEALTH_STORY_CONTENT_IDENTIFICATION_CODE),
+              image: item.THUMBNAIL_IMAGE_URL
+                ? { uri: JSON.parse(item.THUMBNAIL_IMAGE_URL)[0] }
+                : null,
+              title: item.TITLE,
+              category: item.CATEGORY,
+              content: item.CONTENT,
+            })),
+          );
+        }
+      } catch (e) {
+        console.error("건강 이야기 조회 실패:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchItems();
+  }, []);
+
+  // ✅ 카테고리 필터링 (DB 카테고리가 "Dr. Friend"이므로 탭과 맞춤)
+  const filteredItems = allItems.filter((item) => {
+    if (selectedCategory === "Dr.Friend") return item.category === "Dr. Friend";
+    return item.category === selectedCategory;
+  });
 
   return (
     <Screen>
@@ -152,6 +176,7 @@ const HealthStoryListScreen = () => {
           <DescriptionLine>수면과 건강에 대한 올바른 정보와</DescriptionLine>
           <DescriptionLine>다양한 이야기를 만나보세요.</DescriptionLine>
         </DescriptionContainer>
+
         <CategoryContainer>
           {categories.map((category) => (
             <CategoryButton
@@ -166,30 +191,37 @@ const HealthStoryListScreen = () => {
             </CategoryButton>
           ))}
         </CategoryContainer>
+
         <ListContainer>
           <FlatList
-            data={items}
+            data={filteredItems}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <ItemContainer
                 onPress={() => {
-                  // 아이템 상세 화면으로 이동
+                  // 상세 화면으로 이동 (추후 연동)
                 }}
-                activeOpacity={1}
+                activeOpacity={0.8}
               >
                 <ItemImageContainer>
                   {item.image ? (
                     <ItemImage source={item.image} resizeMode="cover" />
                   ) : (
-                    <View style={{ flex: 1 }} />
+                    <View
+                      style={{ flex: 1, backgroundColor: theme.colors.gray600 }}
+                    />
                   )}
                 </ItemImageContainer>
                 <ItemContent>
+                  <ItemCategory>{item.category}</ItemCategory>
                   <ItemTitle>{item.title}</ItemTitle>
                 </ItemContent>
               </ItemContainer>
             )}
             contentContainerStyle={{ paddingBottom: 24 }}
+            ListEmptyComponent={
+              loading ? null : <EmptyText>콘텐츠가 없습니다.</EmptyText>
+            }
           />
         </ListContainer>
       </Content>

@@ -210,11 +210,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             </Button>
           </GhostButtonContainer>
 
-          <DividerContainer>
+          {/* <DividerContainer>
             <DividerLine />
             <DividerText>or</DividerText>
             <DividerLine />
-          </DividerContainer>
+          </DividerContainer> */}
 
           {/* <SocialButton
             icon={AppleLogoSvg}

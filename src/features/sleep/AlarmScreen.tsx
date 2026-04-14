@@ -13,6 +13,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
+import { useSafeAreaInsets } from "react-native-safe-area-context"; // ✅ 추가
 import Button from "../../shared/components/common/Button";
 import { SleepStackParamList } from "../../app/navigation/RootNavigator";
 import MorningBackground from "../../../assets/image/alarm-morning-background.svg";
@@ -30,10 +31,6 @@ if (Platform.OS !== "web") {
     }),
   });
 }
-
-// =====================
-// Styled Components
-// =====================
 
 const Screen = styled(SafeAreaView)`
   flex: 1;
@@ -215,7 +212,6 @@ const CloseButton = styled.TouchableOpacity`
   align-items: center;
 `;
 
-// 다시 알림 바텀시트
 const ReAlarmRow = styled.View`
   flex-direction: row;
   align-items: center;
@@ -228,7 +224,6 @@ const ReAlarmText = styled.Text`
   color: ${({ theme }) => theme.colors.text};
 `;
 
-// 기분 선택 모달
 const MoodContainer = styled.View`
   flex-direction: row;
   justify-content: space-around;
@@ -265,6 +260,7 @@ type SleepScreenNavigationProp = NativeStackNavigationProp<
 
 const AlarmScreen = () => {
   const theme = useTheme();
+  const insets = useSafeAreaInsets(); // ✅ 추가
   const navigation = useNavigation<SleepScreenNavigationProp>();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [alarmTime, setAlarmTime] = useState(new Date());
@@ -272,7 +268,6 @@ const AlarmScreen = () => {
     "sleeping",
   );
 
-  // 모달 상태
   const [isAlarmChangeModalVisible, setIsAlarmChangeModalVisible] =
     useState(false);
   const [isReAlarmModalVisible, setIsReAlarmModalVisible] = useState(false);
@@ -281,7 +276,6 @@ const AlarmScreen = () => {
     "bad" | "normal" | "good" | null
   >(null);
 
-  // ✅ isMorning: 오전 6시 ~ 오후 8시 사이만 아침
   const isMorning = useMemo(() => {
     const hour = new Date().getHours();
     return hour >= 6 && hour < 20;
@@ -297,7 +291,6 @@ const AlarmScreen = () => {
     [isMorning],
   );
 
-  // 피커 임시 상태
   const [tempHour, setTempHour] = useState(9);
   const [tempMinute, setTempMinute] = useState(0);
   const [tempAmPm, setTempAmPm] = useState<"AM" | "PM">("AM");
@@ -311,7 +304,6 @@ const AlarmScreen = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // 모달 열릴 때 피커 초기화
   useEffect(() => {
     if (isAlarmChangeModalVisible) {
       const hours = alarmTime.getHours();
@@ -340,7 +332,6 @@ const AlarmScreen = () => {
     }
   }, [isAlarmChangeModalVisible]);
 
-  // ✅ 알람 예약
   const scheduleAlarm = async (time: Date) => {
     if (Platform.OS === "web") return;
     try {
@@ -377,7 +368,6 @@ const AlarmScreen = () => {
     }
   };
 
-  // ✅ 알람 확정
   const handleAlarmConfirm = () => {
     const hours24 =
       tempAmPm === "PM"
@@ -395,27 +385,22 @@ const AlarmScreen = () => {
     setIsAlarmChangeModalVisible(false);
   };
 
-  // ✅ 정지 버튼
   const handleStop = () => {
     if (!isMorning) {
-      // 밤: 바로 SleepScreen으로
       cancelAlarm();
       navigation.navigate("Sleep");
     } else {
-      // 아침: 정지 후 다시알림 바텀시트
       setSleepStatus("stopped");
       setIsReAlarmModalVisible(true);
     }
   };
 
-  // ✅ 기상 버튼
   const handleWakeUp = () => {
     cancelAlarm();
     setSelectedMood(null);
     setIsMoodModalVisible(true);
   };
 
-  // ✅ 기분 선택 후 SleepScreen으로
   const handleMoodSelect = (mood: "bad" | "normal" | "good") => {
     setSelectedMood(mood);
     setTimeout(() => {
@@ -459,7 +444,6 @@ const AlarmScreen = () => {
     return `${weekdays[date.getDay()]}, ${months[date.getMonth()]}${date.getDate()}일`;
   };
 
-  // 스크롤 핸들러
   const handleHourScroll = (event: any) => {
     const y = event?.nativeEvent?.contentOffset?.y ?? 0;
     const newHour = Math.max(1, Math.min(12, Math.round(y / ITEM_HEIGHT) + 1));
@@ -550,6 +534,9 @@ const AlarmScreen = () => {
     </PickerColumn>
   );
 
+  // ✅ 모달 하단 패딩 (안드로이드 기본 버튼 가림 방지)
+  const modalBottomPadding = insets.bottom + 24;
+
   return (
     <Screen>
       <BackgroundContainer>
@@ -570,7 +557,6 @@ const AlarmScreen = () => {
           <CurrentDate>{formatDate(currentTime)}</CurrentDate>
 
           <SleepButtonContainer>
-            {/* 밤 + 수면중: 정지 + 알림변경 */}
             {!isMorning && sleepStatus === "sleeping" && (
               <>
                 <BlockButton activeOpacity={0.8} onPress={handleStop}>
@@ -587,14 +573,12 @@ const AlarmScreen = () => {
               </>
             )}
 
-            {/* 아침 + 수면중: 정지 */}
             {isMorning && sleepStatus === "sleeping" && (
               <BlockButton activeOpacity={0.8} onPress={handleStop}>
                 <BlockLabel>정지</BlockLabel>
               </BlockButton>
             )}
 
-            {/* 아침 + 정지 후: 기상 */}
             {isMorning && sleepStatus === "stopped" && (
               <BlockButton activeOpacity={0.8} onPress={handleWakeUp}>
                 <BlockLabel>기상</BlockLabel>
@@ -616,7 +600,7 @@ const AlarmScreen = () => {
             activeOpacity={1}
             onPress={() => setIsAlarmChangeModalVisible(false)}
           />
-          <ModalCard>
+          <ModalCard style={{ paddingBottom: modalBottomPadding }}>
             <ModalHeader>
               <ModalTitle>알림 변경</ModalTitle>
               <CloseButton
@@ -688,7 +672,7 @@ const AlarmScreen = () => {
             activeOpacity={1}
             onPress={() => setIsReAlarmModalVisible(false)}
           />
-          <ModalCard>
+          <ModalCard style={{ paddingBottom: modalBottomPadding }}>
             <ReAlarmRow>
               <ReAlarmText>다시 알림을 설정하시겠습니까?</ReAlarmText>
               <Button
@@ -717,7 +701,7 @@ const AlarmScreen = () => {
             activeOpacity={1}
             onPress={() => setIsMoodModalVisible(false)}
           />
-          <ModalCard>
+          <ModalCard style={{ paddingBottom: modalBottomPadding }}>
             <ModalHeader>
               <View>
                 <ModalTitle>잘 주무셨습니까?</ModalTitle>

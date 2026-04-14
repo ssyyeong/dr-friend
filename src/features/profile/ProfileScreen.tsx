@@ -6,7 +6,7 @@ import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { ProfileStackParamList } from "../../app/navigation/RootNavigator";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import Controller from "../../services/controller";
-import { getMemberId } from "../../services/authService";
+import { clearAuth, getMemberId } from "../../services/authService";
 import ExcellentSvg from "../../../assets/icon/excellent.svg";
 import GoodSvg from "../../../assets/icon/good.svg";
 import CautionSvg from "../../../assets/icon/caution.svg";
@@ -309,6 +309,21 @@ const ProfileScreen = () => {
     { icon: require("../../../assets/icon/lock.svg"), label: "개인정보 정책" },
   ];
 
+  const handleLogout = async () => {
+    try {
+      await clearAuth();
+      (navigation as any)
+        .getParent()
+        ?.getParent()
+        ?.reset({
+          index: 0,
+          routes: [{ name: "Auth" }],
+        });
+    } catch (error) {
+      console.error("로그아웃 실패:", error);
+    }
+  };
+
   return (
     <Screen>
       <ScrollableContent showsVerticalScrollIndicator={false}>
@@ -408,6 +423,17 @@ const ProfileScreen = () => {
               </ListItem>
             ))}
           </SectionContainer>
+          <ListItem
+            activeOpacity={0.7}
+            onPress={handleLogout}
+            style={{ borderBottomWidth: 0, marginTop: 16 }}
+          >
+            <ListItemLeft>
+              <ListItemText style={{ color: theme.colors.gray400 }}>
+                로그아웃
+              </ListItemText>
+            </ListItemLeft>
+          </ListItem>
         </Content>
       </ScrollableContent>
     </Screen>

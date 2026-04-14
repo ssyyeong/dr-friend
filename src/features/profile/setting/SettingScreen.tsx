@@ -3,6 +3,7 @@ import styled, { useTheme } from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import Header from "../../../shared/components/common/Header";
 import {
+  FlatList,
   Modal,
   Platform,
   ScrollView,
@@ -16,7 +17,6 @@ import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ProfileStackParamList } from "../../../app/navigation/RootNavigator";
 import Button from "../../../shared/components/common/Button";
-import AppMemberController from "../../../services/AppMemberController";
 import Controller from "../../../services/controller";
 import { getMemberId } from "../../../services/authService";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -243,7 +243,7 @@ const ModalTextInput = styled.TextInput.attrs(({ theme }) => ({
   margin-bottom: 24px;
 `;
 
-// 웹에서 마우스 드래그로 피커 스크롤 (기본은 휠만 됨)
+// 웹에서 마우스 드래그로 피커 스크롤
 const PickerMouseDragWrapper: React.FC<{
   scrollRef: React.RefObject<ScrollView | null>;
   scrollYRef: React.MutableRefObject<number>;
@@ -292,8 +292,7 @@ const PickerMouseDragWrapper: React.FC<{
 };
 
 const SettingScreen: React.FC = () => {
-  const insets = useSafeAreaInsets(); // ✅ 추가
-
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<SettingScreenNavigationProp>();
   const theme = useTheme();
 
@@ -325,6 +324,8 @@ const SettingScreen: React.FC = () => {
   const modalInputRef = useRef<TextInput>(null);
   const genderScrollRef = useRef<ScrollView>(null);
   const birthdayPickerRef = useRef<ScrollView>(null);
+  // ✅ 연도용 FlatList ref 별도
+  const yearFlatListRef = useRef<FlatList>(null);
   const genderScrollYRef = useRef(0);
   const birthdayScrollYRef = useRef(0);
 
@@ -334,6 +335,7 @@ const SettingScreen: React.FC = () => {
     for (let y = currentYear; y >= 1920; y--) years.push(String(y));
     return years;
   };
+  const yearOptions = getYearOptions();
   const monthOptions = Array.from({ length: 12 }, (_, i) => String(i + 1));
   const dayOptions = Array.from({ length: 31 }, (_, i) => String(i + 1));
 
@@ -341,9 +343,7 @@ const SettingScreen: React.FC = () => {
     useCallback(() => {
       const fetchUserInfo = async () => {
         const fetchedMemberId = await getMemberId();
-        if (!fetchedMemberId) {
-          return;
-        }
+        if (!fetchedMemberId) return;
         setMemberId(fetchedMemberId);
 
         const controller = new Controller({
@@ -355,27 +355,10 @@ const SettingScreen: React.FC = () => {
         });
         if (response?.status === 200) {
           const user = response.result;
-          // 이메일
-          if (user.USER_NAME) {
-            setEmail(user.USER_NAME);
-          }
-
-          // 성별 (M -> 남성, F -> 여성)
-          if (user.GENDER) {
-            setGender(user.GENDER === "M" ? "남성" : "여성");
-          }
-
-          // 체중
-          if (user.WEIGHT) {
-            setWeight(user.WEIGHT.toString());
-          }
-
-          // 신장
-          if (user.HEIGHT) {
-            setHeight(user.HEIGHT.toString());
-          }
-
-          // 생일 (YYYY-MM-DD → 년/월/일)
+          if (user.USER_NAME) setEmail(user.USER_NAME);
+          if (user.GENDER) setGender(user.GENDER === "M" ? "남성" : "여성");
+          if (user.WEIGHT) setWeight(user.WEIGHT.toString());
+          if (user.HEIGHT) setHeight(user.HEIGHT.toString());
           if (user.BIRTH) {
             const parts = user.BIRTH.split("-");
             if (parts.length >= 3) {
@@ -384,8 +367,6 @@ const SettingScreen: React.FC = () => {
               setBirthDay(parts[2].replace(/^0+/, "") || "");
             }
           }
-
-          //제품 보유 상태
           if (user.PRODUCT_STATUS) {
             setProductStatus(user.PRODUCT_STATUS);
             if (user.PRODUCT_STATUS === "HAS") {
@@ -413,12 +394,10 @@ const SettingScreen: React.FC = () => {
       const selectedIndex = Math.max(0, genderOptions.indexOf(gender));
       genderScrollYRef.current = selectedIndex * ITEM_HEIGHT;
       setTimeout(() => {
-        if (genderScrollRef.current) {
-          genderScrollRef.current.scrollTo({
-            y: selectedIndex * ITEM_HEIGHT,
-            animated: false,
-          });
-        }
+        genderScrollRef.current?.scrollTo({
+          y: selectedIndex * ITEM_HEIGHT,
+          animated: false,
+        });
       }, 100);
     } else if (type === "weight") {
       setTempValue(weight);
@@ -426,22 +405,15 @@ const SettingScreen: React.FC = () => {
       setTempValue(height);
     } else if (type === "birthday-year") {
       setTempValue(birthYear);
-      const years = getYearOptions();
-      const yearIdx = Math.max(0, years.indexOf(birthYear));
-      birthdayScrollYRef.current = yearIdx * ITEM_HEIGHT;
-      // 연도 목록이 길어서 레이아웃이 늦게 잡힐 수 있음
-      const yearOpenDelay = 250;
+      // ✅ FlatList scrollToIndex 사용
+      const yearIdx = Math.max(0, yearOptions.indexOf(birthYear));
       setTimeout(() => {
-        if (birthdayPickerRef.current) {
-          birthdayPickerRef.current.scrollTo({
-            y: yearIdx * ITEM_HEIGHT,
-            animated: false,
-          });
-        }
-        setTimeout(() => {
-          birthdayScrollYRef.current = yearIdx * ITEM_HEIGHT;
-        }, 50);
-      }, yearOpenDelay);
+        yearFlatListRef.current?.scrollToIndex({
+          index: yearIdx,
+          animated: false,
+          viewPosition: 0.5,
+        });
+      }, 250);
     } else if (type === "birthday-month") {
       setTempValue(birthMonth);
       const monthIdx = birthMonth
@@ -449,24 +421,20 @@ const SettingScreen: React.FC = () => {
         : 0;
       birthdayScrollYRef.current = monthIdx * ITEM_HEIGHT;
       setTimeout(() => {
-        if (birthdayPickerRef.current) {
-          birthdayPickerRef.current.scrollTo({
-            y: monthIdx * ITEM_HEIGHT,
-            animated: false,
-          });
-        }
+        birthdayPickerRef.current?.scrollTo({
+          y: monthIdx * ITEM_HEIGHT,
+          animated: false,
+        });
       }, 100);
     } else if (type === "birthday-day") {
       setTempValue(birthDay);
       const dayIdx = birthDay ? Math.max(0, parseInt(birthDay, 10) - 1) : 0;
       birthdayScrollYRef.current = dayIdx * ITEM_HEIGHT;
       setTimeout(() => {
-        if (birthdayPickerRef.current) {
-          birthdayPickerRef.current.scrollTo({
-            y: dayIdx * ITEM_HEIGHT,
-            animated: false,
-          });
-        }
+        birthdayPickerRef.current?.scrollTo({
+          y: dayIdx * ITEM_HEIGHT,
+          animated: false,
+        });
       }, 100);
     }
     setModalVisible(true);
@@ -501,14 +469,7 @@ const SettingScreen: React.FC = () => {
     const targetIndex = Math.max(0, Math.min(index, genderOptions.length - 1));
     const targetY = targetIndex * ITEM_HEIGHT;
     genderScrollYRef.current = targetY;
-
-    if (genderScrollRef.current) {
-      genderScrollRef.current.scrollTo({
-        y: targetY,
-        animated: true,
-      });
-    }
-
+    genderScrollRef.current?.scrollTo({ y: targetY, animated: true });
     setTempValue(genderOptions[targetIndex]);
   };
 
@@ -531,6 +492,7 @@ const SettingScreen: React.FC = () => {
   const renderModalContent = () => {
     if (!currentModal) return null;
 
+    // 성별
     if (currentModal === "gender") {
       return (
         <>
@@ -562,7 +524,7 @@ const SettingScreen: React.FC = () => {
                   }}
                   style={{ flex: 1 }}
                 >
-                  {genderOptions.map((option, index) => (
+                  {genderOptions.map((option) => (
                     <PickerItem
                       key={option}
                       isSelected={tempValue === option}
@@ -581,18 +543,92 @@ const SettingScreen: React.FC = () => {
       );
     }
 
-    // 생일 년/월/일 피커
-    if (
-      currentModal === "birthday-year" ||
-      currentModal === "birthday-month" ||
-      currentModal === "birthday-day"
-    ) {
+    // ✅ 연도 - FlatList로 가상화 렌더링
+    if (currentModal === "birthday-year") {
+      return (
+        <>
+          <ModalHeader>
+            <ModalTitle>출생 연도</ModalTitle>
+            <CloseButton onPress={closeModal}>
+              <Ionicons name="close" size={24} color="#F2F5FA" />
+            </CloseButton>
+          </ModalHeader>
+          <PickerContainer>
+            <PickerSelectionIndicator />
+            <FlatList
+              ref={yearFlatListRef}
+              data={yearOptions}
+              keyExtractor={(item) => item}
+              showsVerticalScrollIndicator={false}
+              snapToInterval={ITEM_HEIGHT}
+              decelerationRate="fast"
+              scrollEventThrottle={16}
+              nestedScrollEnabled={true}
+              getItemLayout={(_, index) => ({
+                length: ITEM_HEIGHT,
+                offset: ITEM_HEIGHT * index,
+                index,
+              })}
+              contentContainerStyle={{
+                paddingTop: (PICKER_HEIGHT - ITEM_HEIGHT) / 2,
+                paddingBottom: (PICKER_HEIGHT - ITEM_HEIGHT) / 2,
+              }}
+              onScroll={(event) => {
+                const y = event.nativeEvent.contentOffset.y;
+                const index = Math.round(y / ITEM_HEIGHT);
+                if (index >= 0 && index < yearOptions.length) {
+                  setTempValue(yearOptions[index]);
+                }
+              }}
+              onMomentumScrollEnd={(event) => {
+                const y = event.nativeEvent.contentOffset.y;
+                const index = Math.round(y / ITEM_HEIGHT);
+                const targetIndex = Math.max(
+                  0,
+                  Math.min(index, yearOptions.length - 1),
+                );
+                yearFlatListRef.current?.scrollToIndex({
+                  index: targetIndex,
+                  animated: true,
+                  viewPosition: 0.5,
+                });
+                setTempValue(yearOptions[targetIndex]);
+              }}
+              onScrollEndDrag={(event) => {
+                const y = event.nativeEvent.contentOffset.y;
+                const index = Math.round(y / ITEM_HEIGHT);
+                const targetIndex = Math.max(
+                  0,
+                  Math.min(index, yearOptions.length - 1),
+                );
+                yearFlatListRef.current?.scrollToIndex({
+                  index: targetIndex,
+                  animated: true,
+                  viewPosition: 0.5,
+                });
+                setTempValue(yearOptions[targetIndex]);
+              }}
+              renderItem={({ item }) => (
+                <PickerItem
+                  isSelected={tempValue === item}
+                  style={{ height: ITEM_HEIGHT }}
+                >
+                  <PickerItemText isSelected={tempValue === item}>
+                    {item}년
+                  </PickerItemText>
+                </PickerItem>
+              )}
+            />
+          </PickerContainer>
+        </>
+      );
+    }
+
+    // 월 / 일 피커
+    if (currentModal === "birthday-month" || currentModal === "birthday-day") {
       const options =
-        currentModal === "birthday-year"
-          ? getYearOptions()
-          : currentModal === "birthday-month"
-            ? monthOptions
-            : dayOptions;
+        currentModal === "birthday-month" ? monthOptions : dayOptions;
+
       const handleScroll = (event: any) => {
         const y = event.nativeEvent.contentOffset.y;
         birthdayScrollYRef.current = y;
@@ -601,20 +637,17 @@ const SettingScreen: React.FC = () => {
           setTempValue(options[index]);
         }
       };
+
       const handleScrollEnd = (event: any) => {
         const y = event.nativeEvent.contentOffset.y;
         const index = Math.round(y / ITEM_HEIGHT);
         const targetIndex = Math.max(0, Math.min(index, options.length - 1));
         const targetY = targetIndex * ITEM_HEIGHT;
         birthdayScrollYRef.current = targetY;
-        if (birthdayPickerRef.current) {
-          birthdayPickerRef.current.scrollTo({
-            y: targetY,
-            animated: true,
-          });
-        }
+        birthdayPickerRef.current?.scrollTo({ y: targetY, animated: true });
         setTempValue(options[targetIndex]);
       };
+
       return (
         <>
           <ModalHeader>
@@ -638,6 +671,7 @@ const SettingScreen: React.FC = () => {
                   decelerationRate="fast"
                   onScroll={handleScroll}
                   onMomentumScrollEnd={handleScrollEnd}
+                  onScrollEndDrag={handleScrollEnd}
                   scrollEventThrottle={16}
                   nestedScrollEnabled={true}
                   contentContainerStyle={{
@@ -655,9 +689,7 @@ const SettingScreen: React.FC = () => {
                       <PickerItemText isSelected={tempValue === opt}>
                         {currentModal === "birthday-month"
                           ? `${opt}월`
-                          : currentModal === "birthday-day"
-                            ? `${opt}일`
-                            : `${opt}년`}
+                          : `${opt}일`}
                       </PickerItemText>
                     </PickerItem>
                   ))}
@@ -669,7 +701,7 @@ const SettingScreen: React.FC = () => {
       );
     }
 
-    // 체중, 신장은 텍스트 입력
+    // 체중, 신장 텍스트 입력
     return (
       <>
         <ModalHeader>
@@ -690,26 +722,17 @@ const SettingScreen: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (currentModal === "gender") {
-      setGender(tempValue);
-    } else if (currentModal === "weight") {
-      setWeight(tempValue);
-    } else if (currentModal === "height") {
-      setHeight(tempValue);
-    } else if (currentModal === "birthday-year") {
-      setBirthYear(tempValue);
-    } else if (currentModal === "birthday-month") {
-      setBirthMonth(tempValue);
-    } else if (currentModal === "birthday-day") {
-      setBirthDay(tempValue);
-    }
+    if (currentModal === "gender") setGender(tempValue);
+    else if (currentModal === "weight") setWeight(tempValue);
+    else if (currentModal === "height") setHeight(tempValue);
+    else if (currentModal === "birthday-year") setBirthYear(tempValue);
+    else if (currentModal === "birthday-month") setBirthMonth(tempValue);
+    else if (currentModal === "birthday-day") setBirthDay(tempValue);
     closeModal();
   };
 
   const handleSaveAll = async () => {
-    if (!memberId) {
-      return;
-    }
+    if (!memberId) return;
 
     const controller = new Controller({
       modelName: "AppMember",
@@ -720,32 +743,20 @@ const SettingScreen: React.FC = () => {
       APP_MEMBER_IDENTIFICATION_CODE: memberId,
     };
 
-    // 성별 변환 (남성 -> M, 여성 -> F)
-    if (gender) {
-      updateData.GENDER = gender === "남성" ? "M" : "F";
-    }
-
-    // 체중, 신장, 생일
-    if (weight) {
-      updateData.WEIGHT = parseFloat(weight) || 0;
-    }
-    if (height) {
-      updateData.HEIGHT = parseFloat(height) || 0;
-    }
+    if (gender) updateData.GENDER = gender === "남성" ? "M" : "F";
+    if (weight) updateData.WEIGHT = parseFloat(weight) || 0;
+    if (height) updateData.HEIGHT = parseFloat(height) || 0;
     if (birthYear && birthMonth && birthDay) {
       updateData.BIRTH = `${birthYear}-${birthMonth.padStart(2, "0")}-${birthDay.padStart(2, "0")}`;
     }
 
     try {
       const response = await controller.update(updateData);
-      console.log("업데이트 성공:", response);
       if (response?.status === 200) {
         navigation.goBack();
       }
-      // TODO: 성공 메시지 표시
     } catch (error) {
       console.error("업데이트 실패:", error);
-      // TODO: 에러 메시지 표시
     }
   };
 
@@ -761,7 +772,6 @@ const SettingScreen: React.FC = () => {
       />
       <ScrollableContent showsVerticalScrollIndicator={false}>
         <Content>
-          {/* 계정 섹션 */}
           <Section>
             <SectionTitle>계정</SectionTitle>
             <AccountCard activeOpacity={1}>
@@ -774,7 +784,6 @@ const SettingScreen: React.FC = () => {
             </AccountCard>
           </Section>
 
-          {/* 추가정보 섹션 */}
           <Section>
             <SectionTitle>추가정보</SectionTitle>
             <InputContainer>
@@ -827,7 +836,6 @@ const SettingScreen: React.FC = () => {
             </InputContainer>
           </Section>
 
-          {/* 나의 닥터프렌드 제품 섹션 */}
           <Section>
             <SectionTitle>나의 닥터프렌드 제품</SectionTitle>
             <ProductCard
@@ -859,6 +867,7 @@ const SettingScreen: React.FC = () => {
           </Section>
         </Content>
       </ScrollableContent>
+
       <Modal
         visible={modalVisible}
         transparent={true}
@@ -866,7 +875,6 @@ const SettingScreen: React.FC = () => {
         onRequestClose={closeModal}
         statusBarTranslucent={true}
       >
-        {/* ✅ KeyboardAvoidingView로 감싸기 */}
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -880,9 +888,7 @@ const SettingScreen: React.FC = () => {
             activeOpacity={1}
             onPress={(e) => e.stopPropagation()}
           >
-            <ModalContent
-              style={{ paddingBottom: insets.bottom + 24 }} // ✅ 하단 safe area
-            >
+            <ModalContent style={{ paddingBottom: insets.bottom + 24 }}>
               {renderModalContent()}
               <ModalButtonContainer>
                 <ModalButtonWrapper>

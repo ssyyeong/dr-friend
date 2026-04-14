@@ -119,7 +119,7 @@ const ButtonContainer = styled.View`
   background-color: transparent;
 `;
 
-type RoutineCategory = "환경관리" | "생활습관" | "건강&마음";
+type RoutineCategory = "환경 관리" | "생활습관" | "건강&마음";
 
 interface RoutineCardData {
   id: string;
@@ -182,7 +182,7 @@ const getResultMessage = (levelCode: string): string => {
 const CustomRoutineScreen: React.FC<Props> = ({ navigation, route }) => {
   const theme = useTheme();
   const [selectedCategory, setSelectedCategory] =
-    useState<RoutineCategory>("환경관리");
+    useState<RoutineCategory>("환경 관리");
   const result = route.params?.result as SleepSurveyResultPayload;
 
   // 임시 루틴 데이터 - 실제로는 API에서 가져와야 함
@@ -197,7 +197,7 @@ const CustomRoutineScreen: React.FC<Props> = ({ navigation, route }) => {
       id: "2",
       imagePath: "assets/image/routine2.svg",
       backgroundColor: "#1E4A3F",
-      category: "환경관리",
+      category: "환경 관리",
     },
     {
       id: "3",
