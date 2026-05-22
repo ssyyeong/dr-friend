@@ -811,17 +811,17 @@ const DiaryScreen = () => {
     const bedtimeStr = `${bedtime.ampm === "AM" ? "오전" : "오후"} ${bedtime.hour}:${bedtime.minute.toString().padStart(2, "0")}`;
     const wakeTimeStr = `${wakeTime.ampm === "AM" ? "오전" : "오후"} ${wakeTime.hour}:${wakeTime.minute.toString().padStart(2, "0")}`;
     return [
-      [
-        { label: "수면 규칙성", value: analysis.regularity },
-        { label: "심박수", value: analysis.heartRate },
-        { label: "체온 변화", value: analysis.temperatureChange },
-        { label: "체온 안정성", value: analysis.temperatureStability },
-      ],
+      // [
+      //   { label: "수면 규칙성", value: analysis.regularity },
+      //   { label: "심박수", value: analysis.heartRate },
+      //   { label: "체온 변화", value: analysis.temperatureChange },
+      //   { label: "체온 안정성", value: analysis.temperatureStability },
+      // ],
       [
         { label: "잠들기까지", value: analysis.sleepLatency },
         { label: "취침 시간", value: bedtimeStr },
         { label: "기상 시간", value: wakeTimeStr },
-        { label: "코골기", value: analysis.snoring },
+        // { label: "코골기", value: analysis.snoring },
       ],
       [
         { label: "깊은 수면", value: analysis.deepSleep },

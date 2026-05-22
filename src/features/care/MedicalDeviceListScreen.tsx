@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
   Dimensions,
+  Linking,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -203,7 +204,7 @@ const MedicalDeviceListScreen = () => {
             <ActionButton
               variant="primary"
               onPress={() => {
-                // 공식몰 바로가기
+                Linking.openURL("https://worldhome.co.kr/");
               }}
               activeOpacity={1}
             >

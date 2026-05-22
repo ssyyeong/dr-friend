@@ -390,8 +390,9 @@ const AlarmScreen = () => {
       cancelAlarm();
       navigation.navigate("Sleep");
     } else {
-      setSleepStatus("stopped");
-      setIsReAlarmModalVisible(true);
+      cancelAlarm();
+      setSelectedMood(null);
+      setIsMoodModalVisible(true);
     }
   };
 

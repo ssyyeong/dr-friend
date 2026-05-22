@@ -466,7 +466,7 @@ const SleepScreen = () => {
             </TimePickerContainer>
           </SettingCard>
 
-          <SettingCard>
+          {/* <SettingCard>
             <SettingHeader>
               <SettingTitle>코골이 녹음</SettingTitle>
               <ToggleSwitch
@@ -475,7 +475,7 @@ const SleepScreen = () => {
                 size="small"
               />
             </SettingHeader>
-          </SettingCard>
+          </SettingCard> */}
         </Content>
       </ScrollableContent>
 
