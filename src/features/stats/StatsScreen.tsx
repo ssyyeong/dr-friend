@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { View, Dimensions } from "react-native";
+import {
+  View,
+  Dimensions,
+  Modal,
+  TouchableWithoutFeedback,
+  Text,
+  TouchableOpacity,
+} from "react-native";
 import { SafeAreaView } from "../../shared/components/common/SafeAreaView";
 import styled, { useTheme } from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -243,6 +250,7 @@ const screenWidth = Dimensions.get("window").width;
 const StatsScreen = () => {
   const theme = useTheme();
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [missionModalVisible, setMissionModalVisible] = useState(false);
 
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
@@ -374,6 +382,39 @@ const StatsScreen = () => {
     const d = new Date(currentMonth);
     d.setMonth(d.getMonth() + 1);
     setCurrentMonth(d);
+  };
+
+  // =====================
+  // Mission Message
+  // =====================
+
+  const getMissionMessage = (measuredDays: number) => {
+    if (measuredDays === 0) {
+      return {
+        title: "첫 수면 측정 완료 미션",
+        desc: "오늘 밤 수면을 측정하고 첫 리워드를 받아보세요.",
+      };
+    } else if (measuredDays < 3) {
+      return {
+        title: "연속 수면 기록 미션 (3회, 5회, 10회)",
+        desc: "꾸준히 수면을 기록하면 수면 문제에 대한 개선점이 보여요!",
+      };
+    } else if (measuredDays < 10) {
+      return {
+        title: "규칙적인 취침 시간 미션",
+        desc: "비슷한 시간에 잠들수록 더 좋은 수면 습관에 가까워집니다.",
+      };
+    } else if (measuredDays < 20) {
+      return {
+        title: "수면 자가진단 참여 미션",
+        desc: "간단한 자가진단을 완료하고 내 수면 상태를 체크해보세요.",
+      };
+    } else {
+      return {
+        title: "월간 수면 유지/상승 미션",
+        desc: "지난달보다 수면 리듬을 잘 유지하셨네요. 이번 달 리워드를 확인해보세요.",
+      };
+    }
   };
 
   // =====================
@@ -738,6 +779,8 @@ const StatsScreen = () => {
       ? Math.min(1500, Math.max(...bedMinValues) + 30)
       : 1440;
 
+  const missionMessage = getMissionMessage(averageData.measuredDays);
+
   return (
     <Screen>
       <ScrollableContent showsVerticalScrollIndicator={false}>
@@ -853,7 +896,13 @@ const StatsScreen = () => {
                 </ProgressTitle>
               </ProgressHeader>
               <ProgressSub>
-                <HelpSvg width={20} height={20} />
+                {/* ✅ HelpSvg 클릭 시 미션 모달 오픈 */}
+                <TouchableOpacity
+                  onPress={() => setMissionModalVisible(true)}
+                  activeOpacity={0.7}
+                >
+                  <HelpSvg width={20} height={20} />
+                </TouchableOpacity>
                 <ProgressSubText>
                   측정 미션 성공까지{" "}
                   {Math.max(0, measurementGoal - measurementProgress)}회 남음
@@ -996,6 +1045,104 @@ const StatsScreen = () => {
           </View>
         </Content>
       </ScrollableContent>
+
+      {/* ✅ 미션 설명 모달 */}
+      <Modal
+        visible={missionModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMissionModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setMissionModalVisible(false)}>
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              justifyContent: "center",
+              alignItems: "center",
+              paddingHorizontal: 24,
+            }}
+          >
+            <TouchableWithoutFeedback>
+              <View
+                style={{
+                  backgroundColor: "#1E2D45",
+                  borderRadius: 16,
+                  padding: 24,
+                  width: "100%",
+                }}
+              >
+                {/* 모달 헤더 */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 12,
+                  }}
+                >
+                  <HelpSvg width={22} height={22} />
+                  <Text
+                    style={{
+                      fontSize: 18,
+                      fontWeight: "700",
+                      color: theme.colors.text,
+                    }}
+                  >
+                    미션
+                  </Text>
+                </View>
+
+                {/* 미션 제목 */}
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "700",
+                    color: theme.colors.secondary,
+                    marginBottom: 8,
+                  }}
+                >
+                  {missionMessage.title}
+                </Text>
+
+                {/* 미션 설명 */}
+                <Text
+                  style={{
+                    fontSize: 15,
+                    color: theme.colors.textSecondary,
+                    lineHeight: 22,
+                    marginBottom: 20,
+                  }}
+                >
+                  {missionMessage.desc}
+                </Text>
+
+                {/* 확인 버튼 */}
+                <TouchableOpacity
+                  onPress={() => setMissionModalVisible(false)}
+                  activeOpacity={0.8}
+                  style={{
+                    backgroundColor: "rgba(255,255,255,0.12)",
+                    borderRadius: 10,
+                    paddingVertical: 14,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: "600",
+                      color: theme.colors.text,
+                    }}
+                  >
+                    확인
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </Screen>
   );
 };

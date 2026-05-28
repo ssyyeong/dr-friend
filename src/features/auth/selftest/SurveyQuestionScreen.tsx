@@ -9,6 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { PSHI_SURVEY } from "../../../shared/data/survey";
 import { calcSleepSurveyResult } from "../../../shared/utils/sleepSurveyCalculator";
 import Controller from "../../../services/controller";
+
 type Props = NativeStackScreenProps<AuthStackParamList, "SurveyQuestion">;
 
 const Screen = styled(SafeAreaView)`
@@ -53,7 +54,7 @@ const ProgressText = styled.Text`
 
 const QuestionContainer = styled.View`
   margin-top: 36px;
-  margin-bottom: 36px;
+  margin-bottom: 20px;
 `;
 
 const QuestionText = styled.Text`
@@ -61,6 +62,28 @@ const QuestionText = styled.Text`
   font-weight: 700;
   color: ${({ theme }) => theme.colors.text};
   line-height: 35.2px;
+`;
+
+// ✅ 만성질환 설명 박스
+const InfoBox = styled.View`
+  border-width: 2px;
+  border-color: ${({ theme }) => theme.colors.primary};
+  border-radius: ${({ theme }) => theme.radius.md}px;
+  padding: 16px;
+  margin-bottom: 20px;
+`;
+
+const InfoBoxTitle = styled.Text`
+  font-size: 15px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.text};
+  margin-bottom: 8px;
+`;
+
+const InfoBoxContent = styled.Text`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.gray200};
+  line-height: 22px;
 `;
 
 const ChoicesContainer = styled.View`
@@ -102,6 +125,23 @@ const NextButtonContainer = styled.View`
   background-color: transparent;
 `;
 
+// =====================
+// 만성질환 설명 데이터
+// =====================
+
+const CHRONIC_DISEASE_INFO = {
+  title: "만성질환 종류",
+  content:
+    "고혈압, 당뇨병, 고지혈증, 심장질환, 뇌혈관질환, 만성폐질환, 천식, 수면무호흡증, 위·소화기 질환(역류성 식도염 등), 관절염, 만성통증질환, 신장질환, 간질환, 갑상선질환, 우울·불안장애, 치매",
+};
+
+// 설명 박스를 보여줄 questionNo 목록
+const QUESTIONS_WITH_INFO_BOX = [29];
+
+// =====================
+// Component
+// =====================
+
 const SurveyQuestionScreen: React.FC<Props> = ({ navigation, route }) => {
   const theme = useTheme();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -113,6 +153,11 @@ const SurveyQuestionScreen: React.FC<Props> = ({ navigation, route }) => {
     ((currentQuestionIndex + 1) / PSHI_SURVEY.totalQuestions) * 100;
   const isLastQuestion =
     currentQuestionIndex === PSHI_SURVEY.questions.length - 1;
+
+  // ✅ 현재 질문에 설명 박스가 필요한지 여부
+  const showInfoBox = QUESTIONS_WITH_INFO_BOX.includes(
+    currentQuestion.questionNo,
+  );
 
   const handleChoiceSelect = (choiceNo: number) => {
     setAnswers((prev) => ({
@@ -155,7 +200,6 @@ const SurveyQuestionScreen: React.FC<Props> = ({ navigation, route }) => {
         RESULT_TEXT_KEY: result.RESULT_TEXT_KEY,
       });
 
-      // 결과 화면으로 이동
       navigation.navigate("SurveyResult", { result });
     }
   };
@@ -175,6 +219,14 @@ const SurveyQuestionScreen: React.FC<Props> = ({ navigation, route }) => {
         <QuestionContainer>
           <QuestionText>{currentQuestion.text}</QuestionText>
         </QuestionContainer>
+
+        {/* ✅ 만성질환 설명 박스 */}
+        {showInfoBox && (
+          <InfoBox>
+            <InfoBoxTitle>{CHRONIC_DISEASE_INFO.title}</InfoBoxTitle>
+            <InfoBoxContent>{CHRONIC_DISEASE_INFO.content}</InfoBoxContent>
+          </InfoBox>
+        )}
 
         <ChoicesContainer>
           {currentQuestion.choices.map((choice) => {

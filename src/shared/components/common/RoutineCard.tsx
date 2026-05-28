@@ -1,68 +1,218 @@
-import React from "react";
+import React, { useRef, useState } from "react";
+import { Animated, TouchableOpacity, View } from "react-native";
 import styled from "styled-components/native";
-import { Dimensions } from "react-native";
-import RoutineSvg from "../../../../assets/image/routine.svg";
-import Routine2Svg from "../../../../assets/image/routine2.svg";
-import Routine3Svg from "../../../../assets/image/routine3.svg";
-import Routine4Svg from "../../../../assets/image/routine4.svg";
-import Routine5Svg from "../../../../assets/image/routine5.svg";
-import Routine6Svg from "../../../../assets/image/routine6.svg";
+
+// =====================
+// Constants
+// =====================
+
+const CARD_WIDTH = 160;
+const CARD_HEIGHT = 200;
+
+// =====================
+// Styled Components
+// =====================
+
+const CardFace = styled.View<{ backgroundColor: string }>`
+  width: ${CARD_WIDTH}px;
+  height: ${CARD_HEIGHT}px;
+  border-radius: 16px;
+  padding: 16px;
+  background-color: ${({ backgroundColor }) => backgroundColor};
+  position: absolute;
+  backface-visibility: hidden;
+  justify-content: space-between;
+`;
+
+const CardBackFace = styled.View<{ backgroundColor: string }>`
+  width: ${CARD_WIDTH}px;
+  height: ${CARD_HEIGHT}px;
+  border-radius: 16px;
+  padding: 12px;
+  background-color: ${({ backgroundColor }) => backgroundColor};
+  position: absolute;
+  backface-visibility: hidden;
+  justify-content: flex-start;
+  gap: 6px;
+`;
+
+const CardTop = styled.View`
+  align-items: flex-start;
+`;
+
+const CardBottom = styled.View`
+  align-items: flex-start;
+`;
+
+const IconImage = styled.Image`
+  width: 52px;
+  height: 52px;
+`;
+
+const CategoryLabel = styled.Text`
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 4px;
+`;
+
+const CardTitle = styled.Text`
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 22px;
+`;
+
+// ✅ 뒷면 - 박스 유지, 텍스트 가운데 정렬
+const ActionBox = styled.View`
+  border-width: 1px;
+  border-color: rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  padding: 6px 8px;
+  background-color: rgba(255, 255, 255, 0.08);
+  align-items: center;
+`;
+
+const ActionText = styled.Text`
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 16px;
+  text-align: center;
+`;
+
+// =====================
+// Types
+// =====================
 
 interface RoutineCardProps {
   id: string;
-  imagePath: string;
-  backgroundColor: string;
-  onPress?: () => void;
+  category?: string;
+  routineCardName?: string;
+  title?: string;
+  iconImageUrl?: string | null;
+  themeColorCode?: string | null;
+  actionList?: string[];
+  imagePath?: string;
+  backgroundColor?: string;
 }
 
-const CardContainer = styled.TouchableOpacity<{ backgroundColor: string }>`
-  width: ${() => (Dimensions.get("window").width - 44) / 2}px;
-  height: 280px;
-  align-items: center;
-  justify-content: center;
-`;
+// =====================
+// Helpers
+// =====================
 
-const CardImageContainer = styled.View`
-  width: 100%;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-`;
-
-const getRoutineImage = (imagePath: string): React.FC<any> | null => {
-  const imageMap: Record<string, React.FC<any>> = {
-    "assets/image/routine.svg": RoutineSvg,
-    "assets/image/routine2.svg": Routine2Svg,
-    "assets/image/routine3.svg": Routine3Svg,
-    "assets/image/routine4.svg": Routine4Svg,
-    "assets/image/routine5.svg": Routine5Svg,
-    "assets/image/routine6.svg": Routine6Svg,
-  };
-  return imageMap[imagePath] || null;
+const resolveIconUrl = (iconImageUrl?: string | null): string | null => {
+  if (!iconImageUrl) return null;
+  const trimmed = iconImageUrl.trim();
+  if (trimmed.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed[0] : null;
+    } catch {
+      return iconImageUrl;
+    }
+  }
+  return iconImageUrl;
 };
+
+// =====================
+// Component
+// =====================
 
 const RoutineCard: React.FC<RoutineCardProps> = ({
   id,
-  imagePath,
+  category,
+  routineCardName,
+  title,
+  iconImageUrl,
+  themeColorCode,
+  actionList = [],
   backgroundColor,
-  onPress,
 }) => {
-  const RoutineImage = getRoutineImage(imagePath);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const flipAnim = useRef(new Animated.Value(0)).current;
+
+  const bgColor = themeColorCode || backgroundColor || "#1E3A5F";
+  const resolvedIconUrl = resolveIconUrl(iconImageUrl);
+
+  const frontInterpolate = flipAnim.interpolate({
+    inputRange: [0, 180],
+    outputRange: ["0deg", "180deg"],
+  });
+
+  const backInterpolate = flipAnim.interpolate({
+    inputRange: [0, 180],
+    outputRange: ["180deg", "360deg"],
+  });
+
+  const handleFlip = () => {
+    Animated.spring(flipAnim, {
+      toValue: isFlipped ? 0 : 180,
+      friction: 8,
+      tension: 10,
+      useNativeDriver: true,
+    }).start();
+    setIsFlipped(!isFlipped);
+  };
 
   return (
-    <CardContainer
-      backgroundColor={backgroundColor}
-      onPress={onPress}
+    <TouchableOpacity
+      onPress={handleFlip}
       activeOpacity={1}
+      style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}
     >
-      <CardImageContainer>
-        {RoutineImage &&
-          React.createElement(RoutineImage, {
-            width: "100%",
-            height: "100%",
-          })}
-      </CardImageContainer>
-    </CardContainer>
+      <View style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}>
+        {/* 앞면 */}
+        <Animated.View
+          style={{
+            position: "absolute",
+            width: CARD_WIDTH,
+            height: CARD_HEIGHT,
+            backfaceVisibility: "hidden",
+            transform: [{ rotateY: frontInterpolate }],
+          }}
+        >
+          <CardFace backgroundColor={bgColor}>
+            <CardTop>
+              {resolvedIconUrl ? (
+                <IconImage
+                  source={{ uri: resolvedIconUrl }}
+                  resizeMode="contain"
+                />
+              ) : (
+                <View style={{ width: 52, height: 52 }} />
+              )}
+            </CardTop>
+            <CardBottom>
+              {routineCardName && (
+                <CategoryLabel>{routineCardName}</CategoryLabel>
+              )}
+              {category && !routineCardName && (
+                <CategoryLabel>{category}</CategoryLabel>
+              )}
+              <CardTitle>{title || ""}</CardTitle>
+            </CardBottom>
+          </CardFace>
+        </Animated.View>
+
+        {/* 뒷면 */}
+        <Animated.View
+          style={{
+            position: "absolute",
+            width: CARD_WIDTH,
+            height: CARD_HEIGHT,
+            backfaceVisibility: "hidden",
+            transform: [{ rotateY: backInterpolate }],
+          }}
+        >
+          <CardBackFace backgroundColor={bgColor}>
+            {actionList.map((action, idx) => (
+              <ActionBox key={idx}>
+                <ActionText>{action}</ActionText>
+              </ActionBox>
+            ))}
+          </CardBackFace>
+        </Animated.View>
+      </View>
+    </TouchableOpacity>
   );
 };
 

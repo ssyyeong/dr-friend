@@ -169,15 +169,15 @@ const getLevelLabels = (levelCode: string): { ko: string; en: string } => {
 const getResultMessage = (levelCode: string): string => {
   switch (levelCode) {
     case "EXCELLENT":
-      return "탄탄한 수면 건강. 현재 습관을 유지하세요.";
+      return "수면 상태가 매우 좋습니다. 지금의 수면 습관을 계속 유지해보세요.";
     case "GOOD_MINOR":
       return "가벼운 개선 포인트가 존재합니다.\n취침 전 루틴·카페인/스크린 관리로 충분히 개선 가능합니다.";
     case "CAUTION":
       return "수면 중단·졸림·스트레스 중 1–2축에 부담.\n2–4주 행동교정(아래 권장안) + 필요 시 1차 상담 권고.";
     case "PROBLEMATIC":
-      return "삶의 질에 영향. 수면위생 교정 + 수면 전문의/정신건강의학과/내과 상담을 권합니다.";
+      return "수면 문제가 일상생활에 영향을 주고 있을 수 있습니다. 수면 습관을 점검해보시고, 필요하면 수면클리닉이나 정신건강의학과, 내과 상담을 받아보시는 것이 좋습니다.";
     case "SEVERE":
-      return "안전·건강 위험. 전문가 평가를 우선 권고(수면무호흡·불면·과다졸림 감별 필요).";
+      return "수면 상태를 더 자세히 확인해볼 필요가 있습니다. 건강과 안전을 위해 전문가의 진료를 먼저 받아보시는 것을 권합니다.";
     default:
       return "가벼운 개선 포인트가 존재합니다.\n취침 전 루틴·카페인/스크린 관리로 충분히 개선 가능합니다.";
   }
@@ -193,7 +193,7 @@ const formatDate = (dateString: string): string => {
 
 const filterByDateRange = (
   results: SurveyResult[],
-  filter: FilterType
+  filter: FilterType,
 ): SurveyResult[] => {
   if (filter === "전체") {
     return results;
@@ -214,7 +214,7 @@ const SurveyScreen = () => {
   const navigation = useNavigation<SurveyScreenNavigationProp>();
   const theme = useTheme();
   const [recentDiagnosis, setRecentDiagnosis] = useState<SurveyResult | null>(
-    null
+    null,
   );
   const [allResults, setAllResults] = useState<SurveyResult[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<FilterType>("전체");
@@ -260,7 +260,7 @@ const SurveyScreen = () => {
                 new Date(b.CREATED_AT).getTime() -
                 new Date(a.CREATED_AT).getTime()
               );
-            }
+            },
           );
 
           setRecentDiagnosis(sortedResults[0]);
@@ -271,7 +271,7 @@ const SurveyScreen = () => {
         }
       };
       fetchSurveyResults();
-    }, [])
+    }, []),
   );
 
   const filteredResults = filterByDateRange(allResults, selectedFilter);

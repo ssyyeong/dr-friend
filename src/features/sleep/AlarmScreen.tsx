@@ -19,6 +19,12 @@ import { SleepStackParamList } from "../../app/navigation/RootNavigator";
 import MorningBackground from "../../../assets/image/alarm-morning-background.svg";
 import NightBackground from "../../../assets/image/alarm-night-background.svg";
 import MoonSvg from "../../../assets/icon/moon.svg";
+import BadSvg from "../../../assets/icon/bad.svg";
+import SosoSvg from "../../../assets/icon/soso.svg";
+import GoodSvg from "../../../assets/icon/good2.svg";
+import ColorBadSvg from "../../../assets/icon/color-bad.svg";
+import ColorSosoSvg from "../../../assets/icon/color-soso.svg";
+import ColorGoodSvg from "../../../assets/icon/color-good.svg";
 
 if (Platform.OS !== "web") {
   Notifications.setNotificationHandler({
@@ -227,7 +233,6 @@ const ReAlarmText = styled.Text`
 const MoodContainer = styled.View`
   flex-direction: row;
   justify-content: space-around;
-  margin-top: 24px;
   margin-bottom: 8px;
 `;
 
@@ -235,8 +240,6 @@ const MoodButton = styled.TouchableOpacity<{ selected: boolean }>`
   align-items: center;
   padding: 12px;
   border-radius: 16px;
-  background-color: ${({ selected, theme }) =>
-    selected ? theme.colors.secondary + "33" : "transparent"};
 `;
 
 const MoodEmoji = styled.Text`
@@ -692,7 +695,7 @@ const AlarmScreen = () => {
 
       {/* ✅ 기분 선택 모달 */}
       <Modal
-        visible={isMoodModalVisible}
+        visible={true}
         transparent
         animationType="slide"
         onRequestClose={() => setIsMoodModalVisible(false)}
@@ -725,8 +728,11 @@ const AlarmScreen = () => {
                 activeOpacity={0.8}
                 onPress={() => handleMoodSelect("bad")}
               >
-                <MoodEmoji>😡</MoodEmoji>
-                <MoodLabel selected={selectedMood === "bad"}>나쁨</MoodLabel>
+                {selectedMood === "bad" ? (
+                  <ColorBadSvg width={100} height={100} />
+                ) : (
+                  <BadSvg width={100} height={100} />
+                )}
               </MoodButton>
 
               <MoodButton
@@ -734,10 +740,11 @@ const AlarmScreen = () => {
                 activeOpacity={0.8}
                 onPress={() => handleMoodSelect("normal")}
               >
-                <MoodEmoji>🙂</MoodEmoji>
-                <MoodLabel selected={selectedMood === "normal"}>
-                  무난함
-                </MoodLabel>
+                {selectedMood === "normal" ? (
+                  <ColorSosoSvg width={100} height={100} />
+                ) : (
+                  <SosoSvg width={100} height={100} />
+                )}
               </MoodButton>
 
               <MoodButton
@@ -745,8 +752,11 @@ const AlarmScreen = () => {
                 activeOpacity={0.8}
                 onPress={() => handleMoodSelect("good")}
               >
-                <MoodEmoji>😍</MoodEmoji>
-                <MoodLabel selected={selectedMood === "good"}>훌륭함</MoodLabel>
+                {selectedMood === "good" ? (
+                  <ColorGoodSvg width={100} height={100} />
+                ) : (
+                  <GoodSvg width={100} height={100} />
+                )}
               </MoodButton>
             </MoodContainer>
           </ModalCard>

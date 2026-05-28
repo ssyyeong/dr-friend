@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import styled, { useTheme } from "styled-components/native";
 import { SafeAreaView } from "../../../shared/components/common/SafeAreaView";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { ScrollView, Dimensions } from "react-native";
+import { ScrollView, Dimensions, TouchableOpacity } from "react-native";
 import { ProfileStackParamList } from "../../../app/navigation/RootNavigator";
 import Header from "../../../shared/components/common/Header";
 import FilterTabs from "../../../shared/components/common/FilterTabs";
@@ -30,7 +30,7 @@ type Props = NativeStackScreenProps<
   "SurveyResultProfile"
 >;
 
-type RoutineCategory = "환경관리" | "생활습관" | "건강&마음";
+type RoutineCategory = "환경 관리" | "생활습관" | "건강&마음";
 
 interface RoutineCardData {
   id: string;
@@ -198,6 +198,10 @@ const SelfDiagnosisItemText = styled.Text`
   line-height: 24px;
 `;
 
+// =====================
+// Helpers
+// =====================
+
 const getIconSvg = (levelCode: string, color: boolean): React.FC<any> => {
   switch (levelCode) {
     case "EXCELLENT":
@@ -235,15 +239,15 @@ const getLevelColor = (levelCode: string): string => {
 const getResultMessage = (levelCode: string): string => {
   switch (levelCode) {
     case "EXCELLENT":
-      return "탄탄한 수면 건강. 현재 습관을 유지하세요.";
+      return "수면 상태가 매우 좋습니다. 지금의 수면 습관을 계속 유지해보세요.";
     case "GOOD_MINOR":
-      return "가벼운 개선 포인트 존재. 취침 전 루틴·카페인/스크린 관리로 충분히 개선 가능.";
+      return "조금만 관리하면 더 좋아질 수 있습니다. 잠들기 전 생활 습관과 늦은 커피, 휴대폰 사용을 함께 살펴보세요.";
     case "CAUTION":
-      return "수면 중단·졸림·스트레스 중 1–2축에 부담. 2–4주 행동교정(아래 권장안) + 필요 시 1차 상담 권고.";
+      return "수면 중 깨는 일, 낮 시간의 졸림, 스트레스 가운데 불편한 부분이 보입니다. 2~4주 정도 생활 습관을 조절해보시고, 불편이 계속되면 상담을 받아보세요.";
     case "PROBLEMATIC":
-      return "삶의 질에 영향. 수면위생 교정 + 수면 전문의/정신건강의학과/내과 상담을 권합니다.";
+      return "수면 문제가 일상생활에 영향을 주고 있을 수 있습니다. 수면 습관을 점검해보시고, 필요하면 수면클리닉이나 정신건강의학과, 내과 상담을 받아보시는 것이 좋습니다.";
     case "SEVERE":
-      return "안전·건강 위험. 전문가 평가를 우선 권고(수면무호흡·불면·과다졸림 감별 필요).";
+      return "수면 상태를 더 자세히 확인해볼 필요가 있습니다. 건강과 안전을 위해 전문가의 진료를 먼저 받아보시는 것을 권합니다.";
     default:
       return "";
   }
@@ -257,49 +261,86 @@ const formatDate = (dateString: string): string => {
   return `${year}.${month}.${day}`;
 };
 
+// =====================
+// ✅ 플래그별 권고 텍스트 (이미지 2 스펙 기준)
+// =====================
+
 const getRecommendationText = (
-  flag: { type: string; questionNo: number; choiceNo: number },
-  chronicCount?: number,
-  chronicManage?: number
-): { title: string; text: string } => {
+  flag: { type: string; questionNo?: number; choiceNo?: number },
+  chronicCountChoiceNo?: number,
+  chronicManageChoiceNo?: number,
+): { title: string; text: string } | null => {
   switch (flag.type) {
+    // 문항 12: 코골이/무호흡 의심 (choiceNo >= 3)
     case "OSA_RISK":
       return {
         title: "문항 12: 코골이/무호흡 의심",
-        text: "수면다원검사(PSG) 검토 권고. 체중·알코올·코/인후두·턱 구조 평가 및 필요시 전문의 상담.",
+        text: "수면다원검사 고려, 체중·알코올·비강상태·턱구조 평가를 권고합니다.",
       };
+
+    // 문항 13: 하지불안/주기적 사지운동 의심 (choiceNo >= 3)
     case "RLS_RISK":
       return {
-        title: `문항 ${flag.questionNo}: 하지불안증후군 의심`,
-        text: "전문의 상담 권고. 철분 결핍 등 원인 검사 필요.",
+        title: "문항 13: 하지불안/주기적 사지운동 의심",
+        text: "철분·도파민 경로 평가 논의를 위해 전문의 상담을 권고합니다.",
       };
+
+    // 문항 14: 수면제 빈번 사용 (choiceNo >= 3)
     case "SLEEP_MED_RISK":
       return {
-        title: `문항 ${flag.questionNo}: 수면약물 의존 위험`,
-        text: "의료진과 점진적 감량 계획 수립 권고.",
+        title: "문항 14: 수면제 빈번 사용",
+        text: "의존/반동불면 예방을 위해 의료진과 감량·대체 전략을 상의하세요.",
       };
+
+    // 문항 16–21: 주간 졸림 높음
     case "DAYTIME_SLEEPY_RISK":
       return {
-        title: `문항 ${flag.questionNo}: 주간 과다졸림`,
-        text: "수면무호흡·기면증 등 감별 필요. 전문의 상담 권고.",
+        title: "문항 16–21: 주간 졸림 높음",
+        text: "운전·고위험 작업 주의. 원인 감별(무호흡, 과소수면, 약물, 기면) 필요.",
       };
+
+    // 문항 29–30: 만성질환 있음(②+) 그리고 관리 미흡(④–⑤)
     case "CHRONIC_MANAGE_POOR":
       return {
-        title: `문항 29-30: 만성질환 있음(${
-          chronicCount ? "②+" : ""
-        }) 관리 미흡(${chronicManage ? "④-" : ""})`,
-        text: "당뇨·고혈압·심혈관/폐질환·우울/불안 등이 수면장애를 악화. 의사와 통합 관리 필요.",
+        title: `문항 29–30: 만성질환 있음(②+) 관리 미흡(④–⑤)`,
+        text: "당뇨·고혈압·심·뇌혈관/폐질환/우울·불안 등은 수면장애와 상호 악화. 주치의와 통합 관리를 서둘러 주세요.",
       };
+
     default:
-      return { title: "", text: "" };
+      return null;
   }
 };
+
+// =====================
+// ✅ result에서 직접 플래그 계산 (FLAGS_JSON 파싱)
+// =====================
+
+const parseFlags = (result: SleepSurveyResultPayload) => {
+  let flagsJson = result.FLAGS_JSON;
+  if (!flagsJson) return [];
+
+  if (typeof flagsJson === "string") {
+    try {
+      flagsJson = JSON.parse(flagsJson);
+    } catch (e) {
+      console.error("Failed to parse FLAGS_JSON:", e);
+      return [];
+    }
+  }
+
+  if (!Array.isArray(flagsJson)) return [];
+  return flagsJson;
+};
+
+// =====================
+// Component
+// =====================
 
 const SurveyResultProfileScreen: React.FC<Props> = ({ navigation, route }) => {
   const theme = useTheme();
   const result = (route.params as any)?.result as SleepSurveyResultPayload;
   const [selectedCategory, setSelectedCategory] =
-    useState<RoutineCategory>("환경관리");
+    useState<RoutineCategory>("환경 관리");
   const [diagnosisDate, setDiagnosisDate] = useState<string>("");
 
   // 임시 루틴 데이터
@@ -308,13 +349,13 @@ const SurveyResultProfileScreen: React.FC<Props> = ({ navigation, route }) => {
       id: "1",
       imagePath: "assets/image/routine.svg",
       backgroundColor: "#1E3A5F",
-      category: "환경관리",
+      category: "환경 관리",
     },
     {
       id: "2",
       imagePath: "assets/image/routine2.svg",
       backgroundColor: "#1E4A3F",
-      category: "환경관리",
+      category: "환경 관리",
     },
     {
       id: "3",
@@ -356,7 +397,6 @@ const SurveyResultProfileScreen: React.FC<Props> = ({ navigation, route }) => {
         APP_MEMBER_IDENTIFICATION_CODE: memberId,
       });
       if (response?.status === 200 && response?.result?.rows?.length > 0) {
-        // 최신 진단일 찾기
         const latestResult = response.result.rows[0];
         if (latestResult.CREATED_AT) {
           setDiagnosisDate(formatDate(latestResult.CREATED_AT));
@@ -367,10 +407,9 @@ const SurveyResultProfileScreen: React.FC<Props> = ({ navigation, route }) => {
   }, [result]);
 
   const filteredRoutines = routines.filter(
-    (routine) => routine.category === selectedCategory
+    (routine) => routine.category === selectedCategory,
   );
 
-  // 두 개씩 묶어서 행으로 만들기
   const routineRows: RoutineCardData[][] = [];
   for (let i = 0; i < filteredRoutines.length; i += 2) {
     routineRows.push(filteredRoutines.slice(i, i + 2));
@@ -378,39 +417,20 @@ const SurveyResultProfileScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const levelColor = result ? getLevelColor(result.LEVEL_CODE) : "#63DB63";
 
-  // 특별 권고 사항 생성
+  // ✅ 특별 권고 사항 생성 (이미지 2 스펙 적용)
   const recommendations = useMemo(() => {
     if (!result) return [];
+
+    const flags = parseFlags(result);
     const recs: Array<{ title: string; text: string }> = [];
 
-    // FLAGS_JSON이 배열인지 확인하고, 문자열인 경우 파싱
-    let flagsJson = result.FLAGS_JSON;
-    if (!flagsJson) {
-      return recs;
-    }
-
-    // 문자열인 경우 JSON 파싱 시도
-    if (typeof flagsJson === "string") {
-      try {
-        flagsJson = JSON.parse(flagsJson);
-      } catch (e) {
-        console.error("Failed to parse FLAGS_JSON:", e);
-        return recs;
-      }
-    }
-
-    // 배열인지 확인
-    if (!Array.isArray(flagsJson)) {
-      return recs;
-    }
-
-    flagsJson.forEach((flag: any) => {
+    flags.forEach((flag: any) => {
       const rec = getRecommendationText(
         flag,
         result.CHRONIC_COUNT_CHOICE_NO,
-        result.CHRONIC_MANAGE_CHOICE_NO
+        result.CHRONIC_MANAGE_CHOICE_NO,
       );
-      if (rec.title) {
+      if (rec) {
         recs.push(rec);
       }
     });
@@ -458,7 +478,7 @@ const SurveyResultProfileScreen: React.FC<Props> = ({ navigation, route }) => {
             </DiagnosisDescription>
           </DiagnosisSection>
 
-          {/* 특별 권고 사항 */}
+          {/* ✅ 특별 권고 사항 */}
           {recommendations.length > 0 && (
             <SpecialRecommendationsSection>
               <SectionTitle>
@@ -481,7 +501,7 @@ const SurveyResultProfileScreen: React.FC<Props> = ({ navigation, route }) => {
               <RoutineTitleText>님의 맞춤 수면 루틴</RoutineTitleText>
             </RoutineTitleContainer>
             <FilterTabs
-              tabs={["환경관리", "생활습관", "건강&마음"]}
+              tabs={["환경 관리", "생활습관", "건강&마음"]}
               selectedTab={selectedCategory}
               onTabChange={(tab) => setSelectedCategory(tab as RoutineCategory)}
               size="small"
@@ -490,23 +510,29 @@ const SurveyResultProfileScreen: React.FC<Props> = ({ navigation, route }) => {
               {routineRows.map((row, rowIndex) => (
                 <RoutineCardsRow key={rowIndex}>
                   {row.map((routine) => (
-                    <RoutineCard
+                    <TouchableOpacity
                       key={routine.id}
-                      id={routine.id}
-                      imagePath={routine.imagePath}
-                      backgroundColor={routine.backgroundColor}
+                      activeOpacity={0.8}
                       onPress={() =>
                         navigation.navigate("CustomRoutine", { result })
                       }
-                    />
+                    >
+                      <RoutineCard
+                        id={routine.id}
+                        imagePath={routine.imagePath}
+                        backgroundColor={routine.backgroundColor}
+                      />
+                    </TouchableOpacity>
                   ))}
                   {row.length === 1 && <EmptyCard />}
                 </RoutineCardsRow>
               ))}
             </RoutineCardsContainer>
           </RoutineSection>
+
           <Divider />
-          {/* 자가 진단 결과 섹션 (임시로 하나만 표시) */}
+
+          {/* 자가 진단 결과 섹션 */}
           <SelfDiagnosisTitle>자가 진단 결과</SelfDiagnosisTitle>
           <SelfDiagnosisItemHeader>
             <DiagnosisIcon>

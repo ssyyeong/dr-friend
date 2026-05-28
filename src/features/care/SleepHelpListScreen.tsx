@@ -8,6 +8,7 @@ import {
   View,
   Modal,
   Dimensions,
+  Platform,
 } from "react-native";
 import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -16,7 +17,6 @@ import { WebView } from "react-native-webview";
 import { CareStackParamList } from "../../app/navigation/RootNavigator";
 import Header from "../../shared/components/common/Header";
 import Controller from "../../services/controller";
-import * as WebBrowser from "expo-web-browser";
 
 type SleepHelpListRouteProp = RouteProp<CareStackParamList, "SleepHelpList">;
 type NavigationProp = NativeStackNavigationProp<
@@ -203,7 +203,6 @@ const CloseButton = styled.TouchableOpacity`
 // Helpers
 // =====================
 
-// 유튜브 URL에서 video ID 추출
 const extractYoutubeId = (url: string): string | null => {
   if (!url) return null;
   const patterns = [
@@ -217,13 +216,36 @@ const extractYoutubeId = (url: string): string | null => {
   return null;
 };
 
-// 유튜브 썸네일 URL 생성
 const getYoutubeThumbnail = (videoId: string): string =>
   `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
 
-// 유튜브 임베드 URL 생성
-const getYoutubeEmbedUrl = (videoId: string): string =>
-  `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+// ✅ 핵심 수정 1: iframe HTML을 직접 주입해서 재생
+const getYoutubeIframeHtml = (videoId: string): string => `
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; background: #000; }
+      iframe {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    <iframe
+      src="https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1"
+      allow="autoplay; fullscreen; encrypted-media"
+      allowfullscreen
+    ></iframe>
+  </body>
+</html>
+`;
 
 // =====================
 // Component
@@ -240,6 +262,9 @@ const SleepHelpListScreen = () => {
   const [playingItem, setPlayingItem] = useState<any | null>(null);
   const [isYoutubeModalVisible, setIsYoutubeModalVisible] = useState(false);
 
+  // ✅ 핵심 수정 2: 모달 열릴 때마다 WebView를 새로 마운트하기 위한 key
+  const [webviewKey, setWebviewKey] = useState(0);
+
   const categories = ["소리", "음악", "호흡", "스트레칭"];
 
   useEffect(() => {
@@ -252,7 +277,6 @@ const SleepHelpListScreen = () => {
         const response = await controller.findAll({});
         if (response?.status === 200) {
           const rows = response.result.rows ?? response.result ?? [];
-          // 유튜브 썸네일 자동 적용
           const enriched = rows.map((item: any) => {
             const youtubeId = extractYoutubeId(item.CONTENT_FILE_URL);
             return {
@@ -272,23 +296,21 @@ const SleepHelpListScreen = () => {
     fetchItems();
   }, []);
 
-  // 카테고리 필터링
   const filteredItems = items.filter(
     (item) => item.CATEGORY === selectedCategory,
   );
 
-  // 아이템 클릭 → 유튜브 모달 열기
   const handleItemPress = (item: any) => {
     setPlayingItem(item);
+    // ✅ 핵심 수정 3: 아이템 누를 때마다 key 증가 → WebView 완전 재마운트
+    setWebviewKey((prev) => prev + 1);
     setIsYoutubeModalVisible(true);
   };
 
-  // 모달 닫기
   const handleCloseModal = () => {
     setIsYoutubeModalVisible(false);
   };
 
-  // 하단 플레이어 정지
   const handleStop = () => {
     setPlayingItem(null);
     setIsYoutubeModalVisible(false);
@@ -376,7 +398,7 @@ const SleepHelpListScreen = () => {
           />
         </ListContainer>
 
-        {/* ✅ 하단 플레이어 바 */}
+        {/* 하단 플레이어 바 */}
         {playingItem && !isYoutubeModalVisible && (
           <PlayerBar>
             <PlayerLeft>
@@ -419,12 +441,25 @@ const SleepHelpListScreen = () => {
             </YoutubeModalHeader>
 
             {playingItem?.youtubeId ? (
+              // ✅ 핵심 수정 4: source={{ uri }} 대신 source={{ html }} 사용
+              //    originWhitelist, mixedContentMode, allowsInlineMediaPlayback 추가
               <WebView
-                source={{ uri: getYoutubeEmbedUrl(playingItem.youtubeId) }}
-                style={{ width: SCREEN_WIDTH, height: (SCREEN_WIDTH * 9) / 16 }}
-                allowsFullscreenVideo
-                javaScriptEnabled
+                key={webviewKey}
+                source={{ html: getYoutubeIframeHtml(playingItem.youtubeId) }}
+                style={{
+                  width: SCREEN_WIDTH,
+                  height: (SCREEN_WIDTH * 9) / 16,
+                }}
+                originWhitelist={["*"]}
+                allowsInlineMediaPlayback={true}
                 mediaPlaybackRequiresUserAction={false}
+                allowsFullscreenVideo={true}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                // ✅ iOS에서 자동재생 허용
+                allowsAirPlayForMediaPlayback={true}
+                // ✅ Android mixed content 허용
+                mixedContentMode="always"
               />
             ) : (
               <View

@@ -11,6 +11,7 @@ interface FilterTabsProps {
 const FilterContainer = styled.View`
   flex-direction: row;
   gap: 8px;
+  margin-bottom: 12px;
 `;
 
 const FilterButton = styled.TouchableOpacity<{

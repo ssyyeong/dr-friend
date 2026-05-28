@@ -229,22 +229,22 @@ const SelfTestScreen: React.FC<Props> = ({ navigation, route }) => {
             <NotesTitle>참고사항</NotesTitle>
             <NotesItem>
               <NotesText>
-                • 이 도구는 자가 점검용 참고 자료이며, 병원에서 받는 정식 진단을
-                대신하지 않습니다.
+                • 이 기능은 내 수면 상태를 스스로 확인해보는 참고용 자료이며,
+                병원의 정식 진단을 대신할 수는 없습니다.
               </NotesText>
             </NotesItem>
             <NotesItem>
               <NotesText>
-                • 만약 증상이 심하거나 일상에 위험이 있다면 (예: 낮 동안
-                졸음으로 운전이 어려움, 수면 중 무호흡 의심) 꼭 전문가와
-                상담하세요.
+                • 증상이 심하거나 일상생활에 불편이 크다면, 전문가와
+                상담해보시는 것이 좋습니다. 예를 들어 낮에 너무 졸려 운전이
+                어렵거나, 자는 동안 숨이 멈추는 것이 의심될 때는 상담을
+                권합니다.
               </NotesText>
             </NotesItem>
             <NotesItem>
               <NotesText>
-                • 본 설문은 국제적으로 사용되는 주요 검사(PSQI, ESS, ISI-K,
-                BEPSI)를 참고하여 재구성한 것이며, 결과 해석은 실제 진단이 아닌
-                가이드용임을 알려드립니다.
+                • 이 설문은 널리 사용되는 수면 관련 검사 내용을 바탕으로 다시
+                구성한 것으로, 결과는 참고용 안내이며 실제 진단 결과는 아닙니다.
               </NotesText>
             </NotesItem>
           </NotesContainer>

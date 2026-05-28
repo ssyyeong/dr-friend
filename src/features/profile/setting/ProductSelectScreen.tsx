@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components/native";
 import { SafeAreaView } from "../../../shared/components/common/SafeAreaView";
 import Header from "../../../shared/components/common/Header";
-
+import Controller from "../../../services/controller";
+import { getMemberId } from "../../../services/authService";
+import { useNavigation } from "@react-navigation/native";
 const Screen = styled(SafeAreaView)`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
@@ -46,17 +48,52 @@ const ProductText = styled.Text<ProductItemProps>`
     isSelected ? theme.colors.text : theme.colors.gray200};
 `;
 
+const products = [
+  "어싱 닥터프렌드",
+  "뉴슬립패드",
+  "그라운딩 쿠션",
+  "수면 분석 손목밴드",
+];
+
 const ProductSelectScreen = () => {
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(
-    new Set(["어싱 닥터프렌드", "뉴슬립패드"])
+    new Set(),
   );
+  const [memberId, setMemberId] = useState<number | null>(null);
+  const navigation = useNavigation();
 
-  const products = [
-    "어싱 닥터프렌드",
-    "뉴슬립패드",
-    "그라운딩 쿠션",
-    "수면 분석 손목밴드",
-  ];
+  useEffect(() => {
+    const loadProductList = async () => {
+      try {
+        const id = await getMemberId();
+        setMemberId(Number(id));
+
+        const controller = new Controller({
+          modelName: "AppMember",
+          modelId: "app_member",
+        });
+
+        const response = await controller.findOne({
+          APP_MEMBER_IDENTIFICATION_CODE: id,
+        });
+
+        if (response?.status === 200 && response?.result) {
+          const productList = response.result.PRODUCT_LIST;
+          if (productList) {
+            const parsed: string[] =
+              typeof productList === "string"
+                ? JSON.parse(productList)
+                : productList;
+            setSelectedProducts(new Set(parsed));
+          }
+        }
+      } catch (error) {
+        console.error("제품 목록 불러오기 실패:", error);
+      }
+    };
+
+    loadProductList();
+  }, []);
 
   const handleProductToggle = (product: string) => {
     setSelectedProducts((prev) => {
@@ -70,9 +107,27 @@ const ProductSelectScreen = () => {
     });
   };
 
-  const handleSave = () => {
-    // 저장 로직 구현
-    console.log("선택된 제품:", Array.from(selectedProducts));
+  const handleSave = async () => {
+    try {
+      const controller = new Controller({
+        modelName: "AppMember",
+        modelId: "app_member",
+      });
+
+      await controller
+        .update({
+          APP_MEMBER_IDENTIFICATION_CODE: memberId,
+          PRODUCT_STATUS: selectedProducts.size > 0 ? "Y" : "N",
+          PRODUCT_LIST: JSON.stringify(Array.from(selectedProducts)),
+        })
+        .then((response) => {
+          if (response?.status === 200) {
+            navigation.goBack();
+          }
+        });
+    } catch (error) {
+      console.error("저장 실패:", error);
+    }
   };
 
   return (

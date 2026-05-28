@@ -840,15 +840,11 @@ const SettingScreen: React.FC = () => {
             <SectionTitle>나의 닥터프렌드 제품</SectionTitle>
             <ProductCard
               activeOpacity={1}
-              onPress={() =>
-                productStatus === "HAS" && navigation.navigate("ProductSelect")
-              }
+              onPress={() => navigation.navigate("ProductSelect")}
             >
               <ProductLeft>
                 <ProductLabel>
-                  {productStatus === "Y"
-                    ? "제품 보유중"
-                    : "아직 없지만 관심은 있어요."}
+                  {productStatus === "Y" ? "제품 보유중" : "선택"}
                 </ProductLabel>
                 <ProductValue>
                   {productStatus === "Y" &&

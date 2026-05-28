@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import styled from "styled-components/native";
 import { SafeAreaView } from "../../shared/components/common/SafeAreaView";
-import { ScrollView, View, Dimensions, FlatList } from "react-native";
+import { ScrollView, View, FlatList } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -92,13 +92,16 @@ const RoutineSection = styled.View``;
 // Types
 // =====================
 
-type RoutineCategory = "환경관리" | "생활습관" | "건강&마음";
+type RoutineCategory = "환경 관리" | "생활습관" | "건강&마음";
 
 interface RoutineCardData {
   id: string;
-  imagePath: string;
-  backgroundColor: string;
-  category: RoutineCategory;
+  category: string;
+  routineCardName: string;
+  title: string;
+  iconImageUrl: string | null;
+  themeColorCode: string | null;
+  actionList: string[];
 }
 
 // =====================
@@ -126,53 +129,13 @@ const CareScreen = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("소리");
   const [levelCode, setLevelCode] = useState<string | null>(null);
   const [selectedRoutineCategory, setSelectedRoutineCategory] =
-    useState<RoutineCategory>("환경관리");
+    useState<RoutineCategory>("환경 관리");
 
-  // ✅ 실제 데이터 상태
   const [userName, setUserName] = useState<string>("사용자");
   const [sleepHelpItems, setSleepHelpItems] = useState<any[]>([]);
   const [healthStoryItems, setHealthStoryItems] = useState<any[]>([]);
   const [medicalDeviceItems, setMedicalDeviceItems] = useState<any[]>([]);
-
-  // 임시 루틴 데이터
-  const routines: RoutineCardData[] = [
-    {
-      id: "1",
-      imagePath: "assets/image/routine.svg",
-      backgroundColor: "#1E3A5F",
-      category: "환경관리",
-    },
-    {
-      id: "2",
-      imagePath: "assets/image/routine2.svg",
-      backgroundColor: "#1E4A3F",
-      category: "환경관리",
-    },
-    {
-      id: "3",
-      imagePath: "assets/image/routine3.svg",
-      backgroundColor: "#3A2E4F",
-      category: "생활습관",
-    },
-    {
-      id: "4",
-      imagePath: "assets/image/routine4.svg",
-      backgroundColor: "#2E4A5F",
-      category: "생활습관",
-    },
-    {
-      id: "5",
-      imagePath: "assets/image/routine5.svg",
-      backgroundColor: "#4A3E5F",
-      category: "건강&마음",
-    },
-    {
-      id: "6",
-      imagePath: "assets/image/routine6.svg",
-      backgroundColor: "#5A4E6F",
-      category: "건강&마음",
-    },
-  ];
+  const [routines, setRoutines] = useState<RoutineCardData[]>([]);
 
   const filteredRoutines = routines.filter(
     (r) => r.category === selectedRoutineCategory,
@@ -184,7 +147,7 @@ const CareScreen = () => {
         const memberId = await getMemberId();
         if (!memberId) return;
 
-        // ✅ 1. 사용자 이름
+        // 1. 사용자 이름
         try {
           const memberController = new Controller({
             modelName: "AppMember",
@@ -202,7 +165,7 @@ const CareScreen = () => {
           console.error("사용자 정보 조회 실패:", e);
         }
 
-        // ✅ 2. 자가진단 결과
+        // 2. 자가진단 결과
         try {
           const surveyController = new Controller({
             modelName: "SleepSurveyResponseResult",
@@ -223,7 +186,62 @@ const CareScreen = () => {
           console.error("자가진단 결과 조회 실패:", e);
         }
 
-        // ✅ 3. 수면 도움 콘텐츠 (SleepHelpContent)
+        // 3. 루틴 카드 (ResultRoutine API)
+        try {
+          const routineController = new Controller({
+            modelName: "ResultRoutine",
+            modelId: "result_routine",
+          });
+          const routineRes = await routineController.findAll({});
+          if (routineRes?.status === 200) {
+            const rows = routineRes.result?.rows ?? routineRes.result ?? [];
+            const parsed: RoutineCardData[] = rows.map((item: any) => {
+              // ACTION_LIST 파싱
+              let actionList: string[] = [];
+              try {
+                actionList =
+                  typeof item.ACTION_LIST === "string"
+                    ? JSON.parse(item.ACTION_LIST)
+                    : (item.ACTION_LIST ?? []);
+              } catch {
+                actionList = [];
+              }
+
+              // ✅ ICON_IMAGE_URL / IMAGE_URL JSON 배열 파싱
+              let iconImageUrl: string | null = null;
+              const rawUrl = item.ICON_IMAGE_URL ?? item.IMAGE_URL ?? null;
+              if (typeof rawUrl === "string" && rawUrl.trim().startsWith("[")) {
+                try {
+                  const parsed = JSON.parse(rawUrl);
+                  iconImageUrl =
+                    Array.isArray(parsed) && parsed.length > 0
+                      ? parsed[0]
+                      : null;
+                } catch {
+                  iconImageUrl = rawUrl;
+                }
+              } else {
+                iconImageUrl = rawUrl;
+              }
+
+              return {
+                id: String(item.RESULT_ROUTINE_IDENTIFICATION_CODE),
+                category: item.CATEGORY,
+                routineCardName: item.ROUTINE_CARD_NAME,
+                title: item.TITLE,
+                iconImageUrl,
+                themeColorCode: item.THEME_COLOR_CODE ?? null,
+                actionList,
+              };
+            });
+            setRoutines(parsed);
+            console.log(parsed);
+          }
+        } catch (e) {
+          console.error("루틴 카드 조회 실패:", e);
+        }
+
+        // 4. 수면 도움 콘텐츠
         try {
           const contentController = new Controller({
             modelName: "SleepHelpContent",
@@ -249,7 +267,6 @@ const CareScreen = () => {
             setSleepHelpItems(enriched.slice(0, 4));
           }
         } catch (e) {
-          console.error("수면 도움 콘텐츠 조회 실패:", e);
           setSleepHelpItems([
             {
               id: "1",
@@ -264,15 +281,13 @@ const CareScreen = () => {
           ]);
         }
 
-        // ✅ 4. 건강 이야기 (HealthStoryContent)
+        // 5. 건강 이야기
         try {
           const healthController = new Controller({
             modelName: "HealthStoryContent",
             modelId: "health_story_content",
           });
-          const healthRes = await healthController.findAll({
-            IS_EXPOSED: "Y",
-          });
+          const healthRes = await healthController.findAll({ IS_EXPOSED: "Y" });
           if (healthRes?.status === 200) {
             const rows = healthRes.result?.rows ?? healthRes.result ?? [];
             setHealthStoryItems(
@@ -302,15 +317,13 @@ const CareScreen = () => {
           ]);
         }
 
-        // ✅ 5. 수면 의료기기 (CareDevice)
+        // 6. 수면 의료기기
         try {
           const deviceController = new Controller({
             modelName: "CareDevice",
             modelId: "care_device",
           });
-          const deviceRes = await deviceController.findAll({
-            IS_EXPOSED: "Y",
-          });
+          const deviceRes = await deviceController.findAll({ IS_EXPOSED: "Y" });
           if (deviceRes?.status === 200) {
             const rows = deviceRes.result?.rows ?? deviceRes.result ?? [];
             setMedicalDeviceItems(
@@ -355,7 +368,6 @@ const CareScreen = () => {
           locations={[0, 0.5, 1]}
         >
           <HeaderContainer>
-            {/* ✅ 실제 사용자 이름 */}
             <TitleContainer>
               <Name>{userName}</Name>
               <Title>님의 맞춤 수면 루틴</Title>
@@ -364,7 +376,7 @@ const CareScreen = () => {
             {levelCode ? (
               <RoutineSection>
                 <FilterTabs
-                  tabs={["환경관리", "생활습관", "건강&마음"]}
+                  tabs={["환경 관리", "생활습관", "건강&마음"]}
                   selectedTab={selectedRoutineCategory}
                   onTabChange={(tab) =>
                     setSelectedRoutineCategory(tab as RoutineCategory)
@@ -379,8 +391,12 @@ const CareScreen = () => {
                   renderItem={({ item }) => (
                     <RoutineCard
                       id={item.id}
-                      imagePath={item.imagePath}
-                      backgroundColor={item.backgroundColor}
+                      category={item.category}
+                      routineCardName={item.routineCardName}
+                      title={item.title}
+                      iconImageUrl={item.iconImageUrl}
+                      themeColorCode={item.themeColorCode}
+                      actionList={item.actionList}
                     />
                   )}
                   contentContainerStyle={{ paddingRight: 16 }}
@@ -392,12 +408,7 @@ const CareScreen = () => {
                 <Subtitle>
                   더 나은 수면, 첫 걸음은 내 수면 상태를 아는 것입니다.
                 </Subtitle>
-                <MainButtonContainer
-                  onPress={() => {
-                    // 수면 건강 진단하기 버튼 액션
-                  }}
-                  activeOpacity={1}
-                >
+                <MainButtonContainer onPress={() => {}} activeOpacity={1}>
                   <GradientBackground
                     colors={["#7353FF", "#25C3FB"]}
                     start={{ x: 0, y: 0 }}
@@ -412,7 +423,6 @@ const CareScreen = () => {
         </HeaderGradientBackground>
 
         <Content>
-          {/* ✅ 수면 도움 콘텐츠 */}
           <CareSection
             title="수면을 위한 도움"
             description="수면을 위한 사운드로 편안히 주무세요."
@@ -444,7 +454,6 @@ const CareScreen = () => {
 
           <Divider />
 
-          {/* ✅ 건강 이야기 */}
           <CareSection
             title="건강 이야기"
             description={`수면과 건강에 대한 올바른 정보와\n다양한 이야기를 만나보세요.`}
@@ -469,7 +478,6 @@ const CareScreen = () => {
 
           <Divider />
 
-          {/* ✅ 수면 의료기기 */}
           <CareSection
             title="수면 의료기기"
             description={`닥터프렌드 제품과 함께하는 체계적인 수면 케어를\n제공합니다.`}

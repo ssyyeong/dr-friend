@@ -20,6 +20,8 @@ import Button from "../../shared/components/common/Button";
 import { useFitbitSleepByDate } from "../sleep/hooks/useFitbitSleep";
 import Controller from "../../services/controller";
 import { getMemberId } from "../../services/authService";
+import { useNavigation } from "@react-navigation/native";
+import { NavigationProp } from "@react-navigation/native";
 
 // =====================
 // Styled Components
@@ -283,38 +285,6 @@ const LegendText = styled.Text`
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
-const SnoringItem = styled.View`
-  margin-bottom: 16px;
-`;
-
-const SnoringTime = styled.Text`
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  margin-bottom: 8px;
-`;
-
-const SnoringWaveform = styled.View`
-  height: 40px;
-  background-color: ${({ theme }) => theme.colors.gray700};
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  margin-bottom: 8px;
-`;
-
-const SnoringControls = styled.View`
-  flex-direction: row;
-  align-items: center;
-`;
-
-const PlayButton = styled.TouchableOpacity`
-  width: 32px;
-  height: 32px;
-  border-radius: 16px;
-  background-color: ${({ theme }) => theme.colors.gray700};
-  align-items: center;
-  justify-content: center;
-  margin-right: 8px;
-`;
-
 const SleepMemoSection = styled.View`
   margin-bottom: 24px;
 `;
@@ -489,6 +459,38 @@ const GoalTitleText = styled.Text`
   color: ${({ theme }) => theme.colors.primary};
 `;
 
+const GoalHeaderRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+`;
+
+const GoalStatusText = styled.Text`
+  font-size: 18px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+const GoalStatusHighlight = styled.Text`
+  color: ${({ theme }) => theme.colors.primary};
+`;
+
+const GoalManageButton = styled.TouchableOpacity`
+  border-width: 1px;
+  border-color: ${({ theme }) => theme.colors.text};
+  border-radius: ${({ theme }) => theme.radius.pill}px;
+  padding: 8px 16px;
+  align-items: center;
+  justify-content: center;
+`;
+
+const GoalManageButtonText = styled.Text`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.text};
+  font-weight: 500;
+`;
+
 // =====================
 // Types
 // =====================
@@ -520,6 +522,21 @@ interface SleepData {
   diary: string;
 }
 
+interface SleepGoalData {
+  SLEEP_GOAL_IDENTIFICATION_CODE: number;
+  IS_ACTIVE: string;
+  ACTIVE_DAYS: string[];
+  SLEEP_GOAL_HOURS: number;
+  WAKEUP_HOUR: number;
+  WAKEUP_MINUTE: number;
+  WAKEUP_ALARM_ENABLED: string;
+  WAKEUP_ALARM_TYPE: string;
+  BEDTIME_HOUR: number;
+  BEDTIME_MINUTE: number;
+  BEDTIME_ALARM_ENABLED: string;
+  BEDTIME_ALARM_TYPE: string;
+}
+
 type SleepDataMap = Record<string, SleepData>;
 
 const STORAGE_KEY = "@diary_sleep_data";
@@ -529,6 +546,8 @@ const STORAGE_KEY = "@diary_sleep_data";
 // =====================
 
 const DiaryScreen = () => {
+  const navigation = useNavigation<NavigationProp<any>>();
+
   const theme = useTheme();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isExpanded, setIsExpanded] = useState(false);
@@ -539,18 +558,17 @@ const DiaryScreen = () => {
   const [sleepDataMap, setSleepDataMap] = useState<SleepDataMap>({});
   const [serverSleepDates, setServerSleepDates] = useState<string[]>([]);
   const [allSleepRecords, setAllSleepRecords] = useState<any[]>([]);
+  const [sleepGoals, setSleepGoals] = useState<SleepGoalData[]>([]);
   const animatedHeight = useRef(new Animated.Value(0)).current;
 
   const { data: fitbitData } = useFitbitSleepByDate(selectedDate);
 
-  // ✅ 오늘 날짜
   const today = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d;
   }, []);
 
-  // ✅ 미래 날짜 여부
   const isFutureDate = (date: Date) => {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
@@ -690,6 +708,8 @@ const DiaryScreen = () => {
         if (stored) setSleepDataMap(JSON.parse(stored));
 
         const memberId = await getMemberId();
+
+        // 수면 기록 불러오기
         const _controller = new Controller({
           modelName: "SleepRecord",
           modelId: "sleep_record",
@@ -697,12 +717,32 @@ const DiaryScreen = () => {
         const res = await _controller.findAll({
           APP_MEMBER_IDENTIFICATION_CODE: memberId,
         });
-        console.log("findAll 응답:", JSON.stringify(res?.data, null, 2)); // ✅ 추가
-
         if (res?.result) {
           setAllSleepRecords(res.result.rows);
           const dates = res.result.rows.map((r: any) => r.SLEEP_DATE);
           setServerSleepDates(dates);
+        }
+
+        // 수면 목표 불러오기
+        const goalController = new Controller({
+          modelName: "SleepGoal",
+          modelId: "sleep_goal",
+        });
+        const goalRes = await goalController.findAll({
+          APP_MEMBER_IDENTIFICATION_CODE: memberId,
+        });
+        if (goalRes?.status === 200 && goalRes?.result?.rows) {
+          const processedRows = goalRes.result.rows.map((row: any) => {
+            if (row.ACTIVE_DAYS && typeof row.ACTIVE_DAYS === "string") {
+              try {
+                row.ACTIVE_DAYS = JSON.parse(row.ACTIVE_DAYS);
+              } catch {
+                row.ACTIVE_DAYS = [];
+              }
+            }
+            return row;
+          });
+          setSleepGoals(processedRows);
         }
       } catch (error) {
         console.error("데이터 로드 실패:", error);
@@ -811,17 +851,10 @@ const DiaryScreen = () => {
     const bedtimeStr = `${bedtime.ampm === "AM" ? "오전" : "오후"} ${bedtime.hour}:${bedtime.minute.toString().padStart(2, "0")}`;
     const wakeTimeStr = `${wakeTime.ampm === "AM" ? "오전" : "오후"} ${wakeTime.hour}:${wakeTime.minute.toString().padStart(2, "0")}`;
     return [
-      // [
-      //   { label: "수면 규칙성", value: analysis.regularity },
-      //   { label: "심박수", value: analysis.heartRate },
-      //   { label: "체온 변화", value: analysis.temperatureChange },
-      //   { label: "체온 안정성", value: analysis.temperatureStability },
-      // ],
       [
         { label: "잠들기까지", value: analysis.sleepLatency },
         { label: "취침 시간", value: bedtimeStr },
         { label: "기상 시간", value: wakeTimeStr },
-        // { label: "코골기", value: analysis.snoring },
       ],
       [
         { label: "깊은 수면", value: analysis.deepSleep },
@@ -1046,6 +1079,192 @@ const DiaryScreen = () => {
     );
   };
 
+  // =====================
+  // 수면 목표 탭 렌더
+  // =====================
+  const renderGoalTab = () => {
+    const activeGoals = sleepGoals.filter((g) => g.IS_ACTIVE === "Y");
+
+    if (sleepGoals.length === 0 || activeGoals.length === 0) {
+      return (
+        <GoalContainer>
+          <GoalMessageContainer>
+            <GoalTitleText>나에게 맞는 수면 목표</GoalTitleText>를 정하면
+            {"\n"}더 건강한 하루를 만들 수 있습니다.
+          </GoalMessageContainer>
+          <Button
+            variant="primary"
+            onPress={() =>
+              navigation.navigate("Profile", { screen: "SleepGoal" })
+            }
+          >
+            수면 목표 설정하기
+          </Button>
+        </GoalContainer>
+      );
+    }
+
+    return (
+      <GoalContainer>
+        {activeGoals.map((goal) => {
+          const totalSleep = currentSleepData.totalSleepTime;
+          const totalSleepMin = totalSleep.hours * 60 + totalSleep.minutes;
+          const goalMin = goal.SLEEP_GOAL_HOURS * 60;
+          const diffMin = totalSleepMin - goalMin;
+          const absDiff = Math.abs(diffMin);
+          const diffHours = Math.floor(absDiff / 60);
+          const diffMins = absDiff % 60;
+
+          const diffText =
+            diffMin >= 0
+              ? "목표 달성"
+              : `-${diffHours > 0 ? `${diffHours}시간 ` : ""}${diffMins > 0 ? `${diffMins}분` : ""}`;
+
+          const achieveRate =
+            goalMin > 0
+              ? Math.min(100, Math.round((totalSleepMin / goalMin) * 100))
+              : 0;
+
+          // 실제 취침 시간 24h 변환
+          const actualBedHour =
+            currentSleepData.bedtime.ampm === "PM"
+              ? currentSleepData.bedtime.hour === 12
+                ? 12
+                : currentSleepData.bedtime.hour + 12
+              : currentSleepData.bedtime.hour === 12
+                ? 0
+                : currentSleepData.bedtime.hour;
+
+          // 실제 기상 시간 24h 변환
+          const actualWakeHour =
+            currentSleepData.wakeTime.ampm === "AM"
+              ? currentSleepData.wakeTime.hour === 12
+                ? 0
+                : currentSleepData.wakeTime.hour
+              : currentSleepData.wakeTime.hour === 12
+                ? 12
+                : currentSleepData.wakeTime.hour + 12;
+
+          const bedDelay =
+            actualBedHour * 60 +
+            currentSleepData.bedtime.minute -
+            (goal.BEDTIME_HOUR * 60 + goal.BEDTIME_MINUTE);
+
+          const wakeDelay =
+            actualWakeHour * 60 +
+            currentSleepData.wakeTime.minute -
+            (goal.WAKEUP_HOUR * 60 + goal.WAKEUP_MINUTE);
+
+          const formatDelay = (min: number) => {
+            const abs = Math.abs(min);
+            const h = Math.floor(abs / 60);
+            const m = abs % 60;
+            const sign = min > 0 ? "지연 " : "일찍 ";
+            return `${sign}${h > 0 ? `${h}시간 ` : ""}${m}분`;
+          };
+
+          const progressWidth = Math.min(100, achieveRate);
+
+          const messageText =
+            achieveRate >= 100
+              ? "목표를 달성했어요! 🎉"
+              : achieveRate >= 80
+                ? "목표에 거의 도달 했어요!"
+                : achieveRate >= 60
+                  ? "조금 더 노력해봐요!"
+                  : "수면이 많이 부족해요.";
+
+          const highlightPart =
+            achieveRate >= 100
+              ? "목표를 달성"
+              : achieveRate >= 80
+                ? "거의 도달"
+                : achieveRate >= 60
+                  ? "조금 더 노력"
+                  : "많이 부족";
+
+          return (
+            <View key={goal.SLEEP_GOAL_IDENTIFICATION_CODE}>
+              {/* 상태 메시지 + 목표 관리 버튼 */}
+              <GoalHeaderRow>
+                <GoalStatusText>
+                  목표에{" "}
+                  <GoalStatusHighlight>{highlightPart}</GoalStatusHighlight>{" "}
+                  했어요!
+                </GoalStatusText>
+                <GoalManageButton
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    navigation.navigate("Profile", { screen: "SleepGoal" })
+                  }
+                >
+                  <GoalManageButtonText>목표 관리</GoalManageButtonText>
+                </GoalManageButton>
+              </GoalHeaderRow>
+
+              {/* 프로그레스 바 */}
+              <View
+                style={{
+                  height: 6,
+                  backgroundColor: theme.colors.gray700,
+                  borderRadius: 3,
+                  marginBottom: 20,
+                  overflow: "hidden",
+                }}
+              >
+                <View
+                  style={{
+                    width: `${progressWidth}%`,
+                    height: "100%",
+                    backgroundColor: theme.colors.primary,
+                    borderRadius: 3,
+                  }}
+                />
+              </View>
+
+              {/* 수치 정보 */}
+              <AnalysisTable>
+                <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                  {[
+                    {
+                      label: "목표 수면 시간",
+                      value: `${goal.SLEEP_GOAL_HOURS}시간`,
+                    },
+                    { label: "부족/초과 수면 시간", value: diffText },
+                    { label: "목표 달성률", value: `${achieveRate}%` },
+                    {
+                      label: "취침/기상 지연",
+                      value: `${formatDelay(bedDelay)} / ${formatDelay(wakeDelay)}`,
+                    },
+                  ].map((item, idx) => (
+                    <AnalysisCell
+                      key={item.label}
+                      showRightBorder={idx % 2 === 0}
+                      showBottomBorder={idx < 2}
+                    >
+                      <AnalysisCellLabel>{item.label}</AnalysisCellLabel>
+                      <AnalysisCellValue>{item.value}</AnalysisCellValue>
+                    </AnalysisCell>
+                  ))}
+                </View>
+              </AnalysisTable>
+
+              {/* 맞춤 수면 루틴 버튼 */}
+              <View style={{ marginTop: 20 }}>
+                <Button
+                  variant="primary"
+                  onPress={() => navigation.navigate("Care")}
+                >
+                  맞춤 수면 루틴 보기
+                </Button>
+              </View>
+            </View>
+          );
+        })}
+      </GoalContainer>
+    );
+  };
+
   return (
     <Screen>
       <ScrollableContent showsVerticalScrollIndicator={false}>
@@ -1096,15 +1315,15 @@ const DiaryScreen = () => {
                         const isSelected =
                           date.toDateString() === selectedDate.toDateString();
                         const dateHasData = hasData(date);
-                        const isFuture = isFutureDate(date); // ✅
+                        const isFuture = isFutureDate(date);
                         return (
                           <DateItemContainer key={index}>
                             <DateItem
                               selected={isSelected}
                               hasData={dateHasData}
-                              onPress={() => !isFuture && setSelectedDate(date)} // ✅
-                              activeOpacity={isFuture ? 1 : 0.7} // ✅
-                              style={{ opacity: isFuture ? 0.3 : 1 }} // ✅
+                              onPress={() => !isFuture && setSelectedDate(date)}
+                              activeOpacity={isFuture ? 1 : 0.7}
+                              style={{ opacity: isFuture ? 0.3 : 1 }}
                             >
                               <DateText
                                 selected={isSelected}
@@ -1120,15 +1339,15 @@ const DiaryScreen = () => {
                         const isSelected =
                           date.toDateString() === selectedDate.toDateString();
                         const dateHasData = hasData(date);
-                        const isFuture = isFutureDate(date); // ✅
+                        const isFuture = isFutureDate(date);
                         return (
                           <DateItemContainer key={index}>
                             <DateItem
                               selected={isSelected}
                               hasData={dateHasData}
-                              onPress={() => !isFuture && setSelectedDate(date)} // ✅
-                              activeOpacity={isFuture ? 1 : 0.7} // ✅
-                              style={{ opacity: isFuture ? 0.3 : 1 }} // ✅
+                              onPress={() => !isFuture && setSelectedDate(date)}
+                              activeOpacity={isFuture ? 1 : 0.7}
+                              style={{ opacity: isFuture ? 0.3 : 1 }}
                             >
                               <DateText
                                 selected={isSelected}
@@ -1291,46 +1510,6 @@ const DiaryScreen = () => {
                 </Card>
 
                 <SectionDivider />
-
-                {/* <Card>
-                  <CardHeader>
-                    {React.createElement(
-                      require("../../../assets/icon/chart.svg").default ||
-                        require("../../../assets/icon/chart.svg"),
-                      { width: 24, height: 24 },
-                    )}
-                    <CardTitle>
-                      코골이 구간 {currentSleepData.snoringSegments.length}
-                    </CardTitle>
-                  </CardHeader>
-                  {currentSleepData.snoringSegments.map((segment, index) => (
-                    <SnoringItem key={index}>
-                      <SnoringTime>{segment.time}</SnoringTime>
-                      <SnoringWaveform />
-                      <SnoringControls>
-                        <PlayButton
-                          activeOpacity={0.7}
-                          onPress={() => {
-                            const updatedSegments = [
-                              ...currentSleepData.snoringSegments,
-                            ];
-                            updatedSegments[index].isPlaying =
-                              !updatedSegments[index].isPlaying;
-                            saveSleepData(selectedDate, {
-                              snoringSegments: updatedSegments,
-                            });
-                          }}
-                        >
-                          <Ionicons
-                            name={segment.isPlaying ? "pause" : "play"}
-                            size={16}
-                            color={theme.colors.text}
-                          />
-                        </PlayButton>
-                      </SnoringControls>
-                    </SnoringItem>
-                  ))}
-                </Card> */}
               </>
             )}
 
@@ -1435,20 +1614,7 @@ const DiaryScreen = () => {
               </>
             )}
 
-            {activeTab === "goal" && (
-              <GoalContainer>
-                <GoalMessageContainer>
-                  <GoalTitleText>나에게 맞는 수면 목표</GoalTitleText>를 정하면
-                  {"\n"}더 건강한 하루를 만들 수 있습니다.
-                </GoalMessageContainer>
-                <Button
-                  variant="primary"
-                  onPress={() => console.log("수면 목표 설정하기")}
-                >
-                  수면 목표 설정하기
-                </Button>
-              </GoalContainer>
-            )}
+            {activeTab === "goal" && renderGoalTab()}
           </TabContentContainer>
         </Content>
       </ScrollableContent>
