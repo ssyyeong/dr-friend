@@ -695,7 +695,7 @@ const AlarmScreen = () => {
 
       {/* ✅ 기분 선택 모달 */}
       <Modal
-        visible={true}
+        visible={isMoodModalVisible}
         transparent
         animationType="slide"
         onRequestClose={() => setIsMoodModalVisible(false)}

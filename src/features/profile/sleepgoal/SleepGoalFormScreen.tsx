@@ -253,7 +253,9 @@ const PickerScrollView = styled.ScrollView.attrs(() => ({}))`
   flex: 1;
 `;
 
-const SelectionIndicator = styled.View`
+const SelectionIndicator = styled.View.attrs(() => ({
+  pointerEvents: "none" as const,
+}))`
   position: absolute;
   top: 125px;
   left: 0;
@@ -262,7 +264,6 @@ const SelectionIndicator = styled.View`
   border-top-width: 1px;
   border-bottom-width: 1px;
   border-color: ${({ theme }) => theme.colors.gray600};
-  pointer-events: none;
 `;
 
 const PickerItem = styled.View`

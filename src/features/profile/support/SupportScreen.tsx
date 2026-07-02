@@ -325,7 +325,7 @@ const SupportScreen = () => {
 
   return (
     <Screen>
-      <Header title="고객센터" />
+      <Header title="자주 묻는 질문 / 공지사항" />
       <ContentWrapper>
         <Content>
           <TabsContainer>
@@ -334,14 +334,14 @@ const SupportScreen = () => {
               onPress={() => handleTabChange("faq")}
               activeOpacity={1}
             >
-              <TabText active={activeTab === "faq"}>자주묻는 질문</TabText>
+              <TabText active={activeTab === "faq"}>자주 묻는 질문</TabText>
             </Tab>
             <Tab
               active={activeTab === "notice"}
               onPress={() => handleTabChange("notice")}
               activeOpacity={1}
             >
-              <TabText active={activeTab === "notice"}>공지 사항</TabText>
+              <TabText active={activeTab === "notice"}>공지사항</TabText>
             </Tab>
           </TabsContainer>
 

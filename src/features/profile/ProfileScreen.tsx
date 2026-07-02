@@ -294,7 +294,7 @@ const ProfileScreen = () => {
   const customerCenterItems = [
     {
       icon: require("../../../assets/icon/question.svg"),
-      label: "자주 묻는 질문/ 공지",
+      label: "자주 묻는 질문 / 공지사항",
       onPress: () => navigation.navigate("Support"),
     },
     {

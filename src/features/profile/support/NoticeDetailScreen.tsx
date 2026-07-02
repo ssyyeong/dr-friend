@@ -1,7 +1,7 @@
 import React from "react";
 import styled, { useTheme } from "styled-components/native";
 import Header from "../../../shared/components/common/Header";
-import { useRoute, RouteProp } from "@react-navigation/native";
+import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { ProfileStackParamList } from "../../../app/navigation/RootNavigator";
 import { ScrollView } from "react-native";
 import Button from "../../../shared/components/common/Button";
@@ -50,7 +50,8 @@ const ButtonContainer = styled.View`
 
 type NoticeDetailRouteProp = RouteProp<ProfileStackParamList, "NoticeDetail">;
 
-const NoticeDetailScreen = (navigation: any) => {
+const NoticeDetailScreen = () => {
+  const navigation = useNavigation();
   const route = useRoute<NoticeDetailRouteProp>();
   const { notice }: any = route.params;
 
