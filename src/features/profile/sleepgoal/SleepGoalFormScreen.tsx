@@ -231,9 +231,9 @@ const CloseButton = styled.TouchableOpacity`
 `;
 
 const TimePickerContainer = styled.View`
-  height: 300px;
+  height: 280px;
   position: relative;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 `;
 
 const TimePickerWrapper = styled.View`
@@ -249,15 +249,13 @@ const PickerColumn = styled.View`
   position: relative;
 `;
 
-const PickerScrollView = styled.ScrollView.attrs(() => ({}))`
+const PickerScrollView = styled.ScrollView`
   flex: 1;
 `;
 
-const SelectionIndicator = styled.View.attrs(() => ({
-  pointerEvents: "none" as const,
-}))`
+const SelectionIndicator = styled.View`
   position: absolute;
-  top: 125px;
+  top: 115px;
   left: 0;
   right: 0;
   height: 50px;
@@ -715,7 +713,6 @@ const SleepGoalFormScreen: React.FC<Props> = ({ navigation, route }) => {
   ) => {
     return (
       <PickerColumn>
-        <SelectionIndicator />
         <PickerScrollView
           ref={scrollRef as any}
           showsVerticalScrollIndicator={false}
@@ -727,9 +724,10 @@ const SleepGoalFormScreen: React.FC<Props> = ({ navigation, route }) => {
           onScrollEndDrag={onScrollEnd}
           bounces={false}
           scrollEventThrottle={16}
+          nestedScrollEnabled={true}
           contentContainerStyle={{
-            paddingTop: ITEM_HEIGHT,
-            paddingBottom: ITEM_HEIGHT,
+            paddingTop: 115,
+            paddingBottom: 115,
           }}
         >
           {items.map((item, index) => {
@@ -745,6 +743,7 @@ const SleepGoalFormScreen: React.FC<Props> = ({ navigation, route }) => {
             );
           })}
         </PickerScrollView>
+        <SelectionIndicator pointerEvents="none" />
       </PickerColumn>
     );
   };
@@ -1031,10 +1030,7 @@ const SleepGoalFormScreen: React.FC<Props> = ({ navigation, route }) => {
             activeOpacity={1}
             onPress={() => setWakeTimeModalVisible(false)}
           />
-          <ModalCard
-            onStartShouldSetResponder={() => true}
-            onMoveShouldSetResponder={() => true}
-          >
+          <ModalCard>
             <ModalHeader>
               <ModalTitle>기상 시간</ModalTitle>
               <CloseButton
@@ -1091,10 +1087,7 @@ const SleepGoalFormScreen: React.FC<Props> = ({ navigation, route }) => {
             activeOpacity={1}
             onPress={() => setBedtimeTimeModalVisible(false)}
           />
-          <ModalCard
-            onStartShouldSetResponder={() => true}
-            onMoveShouldSetResponder={() => true}
-          >
+          <ModalCard>
             <ModalHeader>
               <ModalTitle>취침 시간</ModalTitle>
               <CloseButton
@@ -1161,10 +1154,7 @@ const SleepGoalFormScreen: React.FC<Props> = ({ navigation, route }) => {
             activeOpacity={1}
             onPress={() => setAlarmTypeModalVisible(false)}
           />
-          <ModalCard
-            onStartShouldSetResponder={() => true}
-            onMoveShouldSetResponder={() => true}
-          >
+          <ModalCard>
             <ModalHeader>
               <ModalTitle>알림 유형</ModalTitle>
               <CloseButton

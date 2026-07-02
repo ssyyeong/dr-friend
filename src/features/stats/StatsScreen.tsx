@@ -257,8 +257,19 @@ const StatsScreen = () => {
   const startDate = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const endDate = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
 
+  // ✅ 전월 날짜 범위 계산
+  const prevMonthDate = new Date(year, month - 1, 1);
+  const prevYear = prevMonthDate.getFullYear();
+  const prevMonth = prevMonthDate.getMonth();
+  const prevStartDate = `${prevYear}-${String(prevMonth + 1).padStart(2, "0")}-01`;
+  const prevEndDate = `${prevYear}-${String(prevMonth + 1).padStart(2, "0")}-${new Date(prevYear, prevMonth + 1, 0).getDate()}`;
+
   const { data: fitbitMonthData, loading: fitbitLoading } =
     useFitbitSleepByRange(startDate, endDate);
+
+  // ✅ 전월 데이터 가져오기
+  const { data: fitbitPrevMonthData, loading: fitbitPrevLoading } =
+    useFitbitSleepByRange(prevStartDate, prevEndDate);
 
   const today = useMemo(() => {
     const now = new Date();
@@ -371,6 +382,19 @@ const StatsScreen = () => {
     );
   }, [currentMonth, today]);
 
+  // ✅ 전월 평균 품질 계산
+  const prevMonthAvgQuality = useMemo(() => {
+    if (!fitbitPrevMonthData || fitbitPrevMonthData.length === 0) return null;
+    const total = fitbitPrevMonthData.reduce((sum, d) => sum + d.quality, 0);
+    return Math.round(total / fitbitPrevMonthData.length);
+  }, [fitbitPrevMonthData]);
+
+  // ✅ 전월 대비 변화율 계산
+  const monthComparison = useMemo(() => {
+    if (!averageData || prevMonthAvgQuality === null) return 0;
+    return averageData.quality - prevMonthAvgQuality;
+  }, [averageData, prevMonthAvgQuality]);
+
   const handlePrevMonth = () => {
     const d = new Date(currentMonth);
     d.setMonth(d.getMonth() - 1);
@@ -382,6 +406,29 @@ const StatsScreen = () => {
     const d = new Date(currentMonth);
     d.setMonth(d.getMonth() + 1);
     setCurrentMonth(d);
+  };
+
+  // =====================
+  // Sleep Feedback Message (구간별 피드백)
+  // =====================
+
+  const getSleepFeedbackMessage = (changeRate: number): string => {
+    if (changeRate >= 1) {
+      // 상승 (+1% 이상)
+      return "이번 달도 좋은 수면을 이어가고 있습니다. 지금처럼 규칙적인 수면 습관을 유지하시면 건강 관리에 도움이 됩니다.";
+    } else if (changeRate === 0) {
+      // 유지 (0%)
+      return "지난달과 비슷한 수준의 수면을 유지하고 있습니다. 지금처럼 일정한 수면 리듬을 이어가는 것이 좋습니다.";
+    } else if (changeRate >= -5) {
+      // 소폭 하락 (-1% ~ -5%)
+      return "좋은 수면을 유지하고 있지만, 지난달보다 조금 아쉽습니다. 평소의 수면 습관을 잘 이어가시면 다시 좋아지는 데 도움이 됩니다.";
+    } else if (changeRate >= -10) {
+      // 주의 필요 (-6% ~ -10%)
+      return "수면 품질이 지난달보다 다소 떨어졌습니다. 최근 생활 리듬이나 피로, 스트레스의 영향이 있었을 수 있으니 수면 습관을 한 번 살펴보세요.";
+    } else {
+      // 급격한 하락 (-11% 이하)
+      return "수면의 질이 크게 저하되었습니다. 최근 수면 상태를 다시 살펴보고, 필요하면 전문가와 상담을 고려해보세요.";
+    }
   };
 
   // =====================
@@ -687,7 +734,7 @@ const StatsScreen = () => {
   };
 
   // 로딩 중이거나 데이터 없을 때
-  if (fitbitLoading) {
+  if (fitbitLoading || fitbitPrevLoading) {
     return (
       <Screen>
         <Content>
@@ -734,7 +781,6 @@ const StatsScreen = () => {
     );
   }
 
-  const monthComparison = -5;
   const measurementProgress = averageData.measuredDays;
   const measurementGoal = 30;
   const measurementProgressPercent = Math.min(
@@ -844,9 +890,7 @@ const StatsScreen = () => {
               <SummaryText style={{ marginLeft: 4 }}>수면</SummaryText>
             </View>
             <SummarySub style={{ marginTop: 16 }}>
-              좋은 수면을 유지하고 있지만,{"\n"}지난달보다 조금 아쉽습니다.
-              {"\n"}
-              추천 루틴을 유지하면 금세 회복됩니다.
+              {getSleepFeedbackMessage(monthComparison)}
             </SummarySub>
           </SummarySection>
 

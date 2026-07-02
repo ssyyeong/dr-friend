@@ -199,7 +199,7 @@ const HealthStoryListScreen = () => {
             renderItem={({ item }) => (
               <ItemContainer
                 onPress={() => {
-                  // 상세 화면으로 이동 (추후 연동)
+                  navigation.navigate("HealthStoryDetail", { item });
                 }}
                 activeOpacity={0.8}
               >

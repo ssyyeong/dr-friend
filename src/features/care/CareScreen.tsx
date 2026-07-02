@@ -298,6 +298,7 @@ const CareScreen = () => {
                   : require("../../../assets/image/ground.png"),
                 title: item.TITLE,
                 category: item.CATEGORY,
+                content: item.CONTENT,
               })),
             );
           }
@@ -327,14 +328,24 @@ const CareScreen = () => {
           if (deviceRes?.status === 200) {
             const rows = deviceRes.result?.rows ?? deviceRes.result ?? [];
             setMedicalDeviceItems(
-              rows.slice(0, 4).map((item: any) => ({
-                id: String(item.CARE_DEVICE_IDENTIFICATION_CODE),
-                image: item.IMAGE_URL
-                  ? { uri: item.IMAGE_URL }
-                  : require("../../../assets/image/bed.png"),
-                title: item.NAME,
-                productLink: item.PRODUCT_LINK,
-              })),
+              rows.slice(0, 4).map((item: any) => {
+                let imageUrl = null;
+                if (item.IMAGE_URL) {
+                  try {
+                    imageUrl = JSON.parse(item.IMAGE_URL)[0];
+                  } catch {
+                    imageUrl = item.IMAGE_URL;
+                  }
+                }
+                return {
+                  id: String(item.CARE_DEVICE_IDENTIFICATION_CODE),
+                  image: imageUrl
+                    ? { uri: imageUrl }
+                    : require("../../../assets/image/bed.png"),
+                  title: item.NAME,
+                  productLink: item.PRODUCT_LINK,
+                };
+              }),
             );
           }
         } catch (e) {
@@ -399,7 +410,7 @@ const CareScreen = () => {
                       actionList={item.actionList}
                     />
                   )}
-                  contentContainerStyle={{ paddingRight: 16 }}
+                  contentContainerStyle={{ paddingHorizontal: 0 }}
                   ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
                 />
               </RoutineSection>
@@ -474,6 +485,9 @@ const CareScreen = () => {
                   ]
             }
             onMorePress={() => navigation.navigate("HealthStoryList")}
+            onItemPress={(item) =>
+              navigation.navigate("HealthStoryDetail", { item })
+            }
           />
 
           <Divider />

@@ -16,6 +16,7 @@ import StatsScreen from "../../features/stats/StatsScreen";
 import CareScreen from "../../features/care/CareScreen";
 import SleepHelpListScreen from "../../features/care/SleepHelpListScreen";
 import HealthStoryListScreen from "../../features/care/HealthStoryListScreen";
+import HealthStoryDetailScreen from "../../features/care/HealthStoryDetailScreen";
 import MedicalDeviceListScreen from "../../features/care/MedicalDeviceListScreen";
 
 import ProfileScreen from "../../features/profile/ProfileScreen";
@@ -117,6 +118,15 @@ export type CareStackParamList = {
   Care: undefined;
   SleepHelpList: { category?: string };
   HealthStoryList: undefined;
+  HealthStoryDetail: {
+    item: {
+      id: string;
+      title: string;
+      category: string;
+      content?: string;
+      image?: { uri: string } | null;
+    };
+  };
   MedicalDeviceList: undefined;
 };
 
@@ -230,6 +240,10 @@ const CareStackNavigator = () => {
       <CareStack.Screen
         name="HealthStoryList"
         component={HealthStoryListScreen}
+      />
+      <CareStack.Screen
+        name="HealthStoryDetail"
+        component={HealthStoryDetailScreen}
       />
       <CareStack.Screen
         name="MedicalDeviceList"

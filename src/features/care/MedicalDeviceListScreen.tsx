@@ -12,19 +12,11 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { CareStackParamList } from "../../app/navigation/RootNavigator";
 import Header from "../../shared/components/common/Header";
 import Controller from "../../services/controller";
 import { getMemberId } from "../../services/authService";
 import Button from "../../shared/components/common/Button";
 import { useTheme } from "styled-components/native";
-
-type NavigationProp = NativeStackNavigationProp<
-  CareStackParamList,
-  "MedicalDeviceList"
->;
 
 const Screen = styled(SafeAreaView)`
   flex: 1;
@@ -218,7 +210,6 @@ const ButtonRow = styled.View`
 // =====================
 
 const MedicalDeviceListScreen = () => {
-  const navigation = useNavigation<NavigationProp>();
   const theme = useTheme();
 
   const [products, setProducts] = useState<any[]>([]);
@@ -240,9 +231,10 @@ const MedicalDeviceListScreen = () => {
       modelName: "CareDevice",
       modelId: "care_device",
     });
-    const response = await controller.findAll({});
+    const response = await controller.findAll({ IS_EXPOSED: "Y" });
     if (response?.status === 200) {
-      setProducts(response.result.rows);
+      const rows = response.result?.rows ?? response.result ?? [];
+      setProducts(rows);
     }
   };
 
@@ -336,25 +328,41 @@ const MedicalDeviceListScreen = () => {
               공식몰에서 제품 당 상세정보와 효능을{"\n"} 확인 하실 수 있습니다.
             </ProductCategoryDescription>
             <ProductGrid>
-              {products.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  onPress={() => {}}
-                  activeOpacity={1}
-                >
-                  <ProductCardImageContainer>
-                    {product.IMAGE_URL ? (
-                      <ProductCardImage
-                        source={{ uri: JSON.parse(product.IMAGE_URL)[0] }}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View style={{ flex: 1 }} />
-                    )}
-                  </ProductCardImageContainer>
-                  <ProductCardTitle>{product.NAME}</ProductCardTitle>
-                </ProductCard>
-              ))}
+              {products.map((product) => {
+                let imageUrl = null;
+                if (product.IMAGE_URL) {
+                  try {
+                    imageUrl = JSON.parse(product.IMAGE_URL)[0];
+                  } catch {
+                    imageUrl = product.IMAGE_URL;
+                  }
+                }
+                return (
+                  <ProductCard
+                    key={product.CARE_DEVICE_IDENTIFICATION_CODE}
+                    onPress={() => {
+                      if (product.PRODUCT_LINK) {
+                        Linking.openURL(product.PRODUCT_LINK);
+                      } else {
+                        Linking.openURL("https://worldhome.co.kr/");
+                      }
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <ProductCardImageContainer>
+                      {imageUrl ? (
+                        <ProductCardImage
+                          source={{ uri: imageUrl }}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={{ flex: 1 }} />
+                      )}
+                    </ProductCardImageContainer>
+                    <ProductCardTitle>{product.NAME}</ProductCardTitle>
+                  </ProductCard>
+                );
+              })}
             </ProductGrid>
           </ProductCategorySection>
         </Content>
