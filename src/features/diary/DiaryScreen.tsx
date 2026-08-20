@@ -590,28 +590,27 @@ const DiaryScreen = () => {
       const end = new Date(serverRecord.END_TIME);
       const toAmPm = (hour: number): "AM" | "PM" => (hour >= 12 ? "PM" : "AM");
       const to12Hour = (hour: number) => hour % 12 || 12;
-      const total = serverRecord.MINUTES_ASLEEP;
+      const total = serverRecord.MINUTES_ASLEEP ?? 0;
+      const deepMinutes = serverRecord.DEEP_SLEEP_MINUTES ?? 0;
+      const lightMinutes = serverRecord.LIGHT_SLEEP_MINUTES ?? 0;
+      const remMinutes = serverRecord.REM_SLEEP_MINUTES ?? 0;
+      const wakeMinutes = serverRecord.WAKE_MINUTES ?? 0;
       const deepPct =
-        total > 0
-          ? Math.round((serverRecord.DEEP_SLEEP_MINUTES / total) * 100)
-          : 0;
+        total > 0 ? Math.round((deepMinutes / total) * 100) : 0;
       const lightPct =
-        total > 0
-          ? Math.round((serverRecord.LIGHT_SLEEP_MINUTES / total) * 100)
-          : 0;
+        total > 0 ? Math.round((lightMinutes / total) * 100) : 0;
       const remPct =
-        total > 0
-          ? Math.round((serverRecord.REM_SLEEP_MINUTES / total) * 100)
-          : 0;
+        total > 0 ? Math.round((remMinutes / total) * 100) : 0;
       const wakePct =
-        total > 0 ? Math.round((serverRecord.WAKE_MINUTES / total) * 100) : 0;
+        total > 0 ? Math.round((wakeMinutes / total) * 100) : 0;
 
+      const timeInBed = serverRecord.TIME_IN_BED ?? 0;
       return {
-        quality: serverRecord.EFFICIENCY,
+        quality: serverRecord.EFFICIENCY ?? 0,
         totalSleepTime: { hours: Math.floor(total / 60), minutes: total % 60 },
         timeInBed: {
-          hours: Math.floor(serverRecord.TIME_IN_BED / 60),
-          minutes: serverRecord.TIME_IN_BED % 60,
+          hours: Math.floor(timeInBed / 60),
+          minutes: timeInBed % 60,
         },
         sleepGoal: existingData?.sleepGoal ?? { hours: 7, minutes: 30 },
         bedtime: {
@@ -645,24 +644,20 @@ const DiaryScreen = () => {
 
     if (existingData) return existingData;
 
-    const dayOfMonth = selectedDate.getDate();
-    const baseQuality = 65 + (dayOfMonth % 20);
-    const baseHours = 6 + Math.floor(dayOfMonth % 3);
-    const baseMinutes = 30 + (dayOfMonth % 30);
-
+    // 데이터가 없을 때 빈 값으로 표시
     return {
-      quality: Math.min(100, baseQuality),
-      totalSleepTime: { hours: baseHours, minutes: baseMinutes },
-      timeInBed: { hours: baseHours + 1, minutes: (baseMinutes + 20) % 60 },
+      quality: 0,
+      totalSleepTime: { hours: 0, minutes: 0 },
+      timeInBed: { hours: 0, minutes: 0 },
       sleepGoal: { hours: 7, minutes: 30 },
       bedtime: {
-        hour: 11 + (dayOfMonth % 2),
-        minute: 10 + (dayOfMonth % 20),
-        ampm: "PM" as const,
+        hour: 0,
+        minute: 0,
+        ampm: "AM" as const,
       },
       wakeTime: {
-        hour: 7 + (dayOfMonth % 2),
-        minute: dayOfMonth % 30,
+        hour: 0,
+        minute: 0,
         ampm: "AM" as const,
       },
       analysis: {
@@ -678,7 +673,7 @@ const DiaryScreen = () => {
         snoring: "-",
       },
       snoringSegments: [],
-      coaching: "수면 데이터를 분석 중입니다.",
+      coaching: "수면 데이터가 없습니다.",
       memoOptions: [],
       diary: "",
     };
@@ -924,33 +919,8 @@ const DiaryScreen = () => {
       return { lightSleep, deepSleep };
     }
 
-    const dayOfMonth = selectedDate.getDate();
-    const points = 50;
-    const lightSleep: number[] = [];
-    const deepSleep: number[] = [];
-    for (let i = 0; i < points; i++) {
-      const variation = Math.sin(i * 0.3 + dayOfMonth * 0.1) * 0.15;
-      if (i < 5) {
-        lightSleep.push(0);
-        deepSleep.push(0);
-      } else if (i < 15) {
-        const p = (i - 5) / 10;
-        lightSleep.push(0.3 + p * 0.4 + variation);
-        deepSleep.push(0);
-      } else if (i < 30) {
-        const p = (i - 15) / 15;
-        deepSleep.push(Math.sin(p * Math.PI) * 0.6 + variation * 0.5);
-        lightSleep.push(0.2 + variation);
-      } else if (i < 40) {
-        const p = (i - 30) / 10;
-        lightSleep.push(0.3 + p * 0.3 + variation);
-        deepSleep.push(0.1 - p * 0.1);
-      } else {
-        lightSleep.push(0.5 + variation);
-        deepSleep.push(0);
-      }
-    }
-    return { lightSleep, deepSleep };
+    // 데이터가 없을 때 빈 배열 반환
+    return { lightSleep: [], deepSleep: [] };
   }, [selectedDate, allSleepRecords]);
 
   const sleepStageData = generateSleepStageData();
@@ -963,6 +933,37 @@ const DiaryScreen = () => {
     const chartHeight = graphHeight - padding * 2;
     const { lightSleep, deepSleep } = sleepStageData;
     const points = lightSleep.length;
+
+    // points가 1 이하이면 빈 그래프(눈금선만) 표시
+    if (points <= 1) {
+      return (
+        <GraphContainer>
+          <Svg width={graphWidth} height={graphHeight}>
+            {[0, 1, 2].map((level) => (
+              <Line
+                key={`grid-${level}`}
+                x1={padding}
+                y1={padding + (chartHeight / 2) * (2 - level)}
+                x2={padding + chartWidth}
+                y2={padding + (chartHeight / 2) * (2 - level)}
+                stroke="rgba(255, 255, 255, 0.08)"
+                strokeWidth="1"
+              />
+            ))}
+            <SvgText
+              x={graphWidth / 2}
+              y={graphHeight / 2}
+              fontSize="12"
+              fill={theme.colors.textSecondary}
+              textAnchor="middle"
+            >
+              데이터 없음
+            </SvgText>
+          </Svg>
+        </GraphContainer>
+      );
+    }
+
     const pointSpacing = chartWidth / (points - 1);
 
     const getY = (value: number) =>
@@ -1418,7 +1419,7 @@ const DiaryScreen = () => {
                     />
                   </Svg>
                   <QualityCircleContent>
-                    <QualityText>{sleepQuality}%</QualityText>
+                    <QualityText>{String(sleepQuality)}{'%'}</QualityText>
                   </QualityCircleContent>
                 </QualityCircleContainer>
               </SleepSummaryLeft>

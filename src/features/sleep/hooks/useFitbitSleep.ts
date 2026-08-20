@@ -76,8 +76,11 @@ export const useFitbitSleepByDate = (date: Date) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const dateStr = date.toISOString().split("T")[0];
+
   useEffect(() => {
-    const dateStr = date.toISOString().split("T")[0];
+    let isCancelled = false;
+
     const _controller = new Controller({
       modelName: "SleepRecord",
       modelId: "sleep_record",
@@ -87,11 +90,14 @@ export const useFitbitSleepByDate = (date: Date) => {
       try {
         setLoading(true);
         setError(null);
+        setData(null); // 이전 데이터 초기화
 
         // 1. 서버에서 먼저 조회
         const serverRes = await _controller.findOne({
           SLEEP_DATE: dateStr,
         });
+
+        if (isCancelled) return;
 
         if (serverRes?.data?.data) {
           setData(parseServerSleep(serverRes.data.data));
@@ -100,10 +106,14 @@ export const useFitbitSleepByDate = (date: Date) => {
 
         // 2. 서버에 없으면 Fitbit에서 동기화
         const accessToken = await getAccessToken();
+        const memberId = await getMemberId();
         const syncRes = await controller.syncFromFitbit({
           SLEEP_DATE: dateStr,
-          ACCESS_TOKEN: accessToken,
+          FITBIT_ACCESS_TOKEN: accessToken,
+          APP_MEMBER_IDENTIFICATION_CODE: memberId,
         });
+
+        if (isCancelled) return;
 
         if (syncRes?.data?.record) {
           setData(parseServerSleep(syncRes.data.record));
@@ -111,14 +121,22 @@ export const useFitbitSleepByDate = (date: Date) => {
           setData(null);
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : "데이터 로드 실패");
+        if (!isCancelled) {
+          setError(e instanceof Error ? e.message : "데이터 로드 실패");
+        }
       } finally {
-        setLoading(false);
+        if (!isCancelled) {
+          setLoading(false);
+        }
       }
     };
 
     fetchData();
-  }, [date.toISOString().split("T")[0]]);
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [dateStr]);
 
   return { data, loading, error };
 };
@@ -141,11 +159,6 @@ export const useFitbitSleepByRange = (startDate: string, endDate: string) => {
           START_DATE: startDate,
           END_DATE: endDate,
         });
-
-        console.log(
-          "getByRange 응답:",
-          JSON.stringify(res?.data?.result, null, 2),
-        ); // ✅ 추가
 
         if (res?.data?.result?.length > 0) {
           setData(res.data.result.map(parseServerSleep));

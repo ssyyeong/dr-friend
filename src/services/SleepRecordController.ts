@@ -37,13 +37,7 @@ class SleepRecordController {
   async syncFromFitbit(option: IControllerOptions): Promise<any> {
     const params = option;
     const url = `${this.apiUrl}${this.rootRoute}/${this.role}/${this.modelId}/sync`;
-    const response = await axios.post(url, params, {
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*", // 또는 특정 도메인
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
-    });
+    const response = await axios.post(url, params);
 
     return response;
   }

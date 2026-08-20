@@ -90,7 +90,6 @@ export const getAccessToken = async (): Promise<string> => {
     SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN),
     SecureStore.getItemAsync(STORAGE_KEYS.TOKEN_EXPIRY),
   ]);
-  console.log("accessToken", accessToken, expiry);
   if (!accessToken || !expiry) {
     throw new Error("로그인이 필요합니다.");
   }
