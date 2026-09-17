@@ -461,6 +461,11 @@ const CareScreen = () => {
                 category: selectedCategory,
               })
             }
+            onItemPress={(item) =>
+              navigation.navigate("SleepHelpList", {
+                category: item.category || selectedCategory,
+              })
+            }
           />
 
           <Divider />
