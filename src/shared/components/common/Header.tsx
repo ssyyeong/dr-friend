@@ -68,9 +68,10 @@ const Header: React.FC<HeaderProps> = ({
   const handleBackPress = () => {
     if (onBackPress) {
       onBackPress();
-    } else {
+    } else if (navigation.canGoBack()) {
       navigation.goBack();
     }
+    // canGoBack()이 false면 아무 동작도 하지 않음 (잘못된 탭 이동 방지)
   };
 
   const renderRightButton = () => {
