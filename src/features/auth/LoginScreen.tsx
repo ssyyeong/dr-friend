@@ -118,7 +118,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         await saveMemberId(
           response?.data?.result?.user?.APP_MEMBER_IDENTIFICATION_CODE,
         );
-        (navigation as any).getParent()?.navigate("MainTab");
+        // 네비게이션 스택을 리셋하여 뒤로가기 시 로그인 화면으로 돌아가지 않도록 함
+        (navigation as any).getParent()?.reset({
+          index: 0,
+          routes: [{ name: "MainTab" }],
+        });
       }
       // 로그인 성공하면 RootStack의 MainTab으로 이동
     } catch (error) {
@@ -143,8 +147,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       // 로그인 성공 시 토큰 저장
       await saveToken(mockToken);
 
-      // 로그인 성공하면 RootStack의 MainTab으로 이동
-      (navigation as any).getParent()?.navigate("MainTab");
+      // 네비게이션 스택을 리셋하여 뒤로가기 시 로그인 화면으로 돌아가지 않도록 함
+      (navigation as any).getParent()?.reset({
+        index: 0,
+        routes: [{ name: "MainTab" }],
+      });
     } catch (error) {
       console.error("Apple 로그인 실패:", error);
       // TODO: 에러 메시지 표시
@@ -163,8 +170,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       // 로그인 성공 시 토큰 저장
       await saveToken(mockToken);
 
-      // 로그인 성공하면 RootStack의 MainTab으로 이동
-      (navigation as any).getParent()?.navigate("MainTab");
+      // 네비게이션 스택을 리셋하여 뒤로가기 시 로그인 화면으로 돌아가지 않도록 함
+      (navigation as any).getParent()?.reset({
+        index: 0,
+        routes: [{ name: "MainTab" }],
+      });
     } catch (error) {
       console.error("Google 로그인 실패:", error);
       // TODO: 에러 메시지 표시
