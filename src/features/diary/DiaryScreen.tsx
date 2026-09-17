@@ -575,6 +575,23 @@ const DiaryScreen = () => {
     return d > today;
   };
 
+  // 이전 월로 이동
+  const goToPreviousMonth = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setMonth(newDate.getMonth() - 1);
+    setSelectedDate(newDate);
+  };
+
+  // 다음 월로 이동
+  const goToNextMonth = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setMonth(newDate.getMonth() + 1);
+    // 미래 월로는 이동하지 않도록 제한
+    if (newDate <= today) {
+      setSelectedDate(newDate);
+    }
+  };
+
   const getDateKey = (date: Date) => date.toISOString().split("T")[0];
 
   const getCurrentSleepData = useCallback((): SleepData => {
@@ -1273,11 +1290,29 @@ const DiaryScreen = () => {
           <Header>
             <HeaderContainer>
               <DateContainer>
+                {isExpanded && (
+                  <ToggleButton onPress={goToPreviousMonth} activeOpacity={0.7}>
+                    <Ionicons
+                      name="chevron-back"
+                      size={24}
+                      color={theme.colors.text}
+                    />
+                  </ToggleButton>
+                )}
                 <DayHeader>{formatDate(selectedDate).split(" ")[0]}</DayHeader>
                 <DateHeader>
                   {formatDate(selectedDate).split(" ")[1]}{" "}
                   {formatDate(selectedDate).split(" ")[2]}
                 </DateHeader>
+                {isExpanded && (
+                  <ToggleButton onPress={goToNextMonth} activeOpacity={0.7}>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={24}
+                      color={theme.colors.text}
+                    />
+                  </ToggleButton>
+                )}
               </DateContainer>
               <TimeBadge>
                 <TimeBadgeText>{calculateTimeDifference()}</TimeBadgeText>
