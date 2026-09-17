@@ -5,10 +5,14 @@ import styled, { useTheme } from "styled-components/native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as Notifications from "expo-notifications";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Button from "../../shared/components/common/Button";
 import ToggleSwitch from "../../shared/components/common/ToggleSwitch";
 import { SleepStackParamList } from "../../app/navigation/RootNavigator";
 import SleepMemoModal from "../diary/components/SleepMemoModal";
+
+const ALARM_TIME_KEY = "@alarm_time";
+const ALARM_ENABLED_KEY = "@alarm_enabled";
 
 if (Platform.OS !== "web") {
   Notifications.setNotificationHandler({
@@ -243,11 +247,15 @@ const SleepScreen = () => {
       const alarm = new Date(time ?? alarmTime);
       if (alarm <= now) alarm.setDate(alarm.getDate() + 1);
 
+      // 알람 시간 저장
+      await AsyncStorage.setItem(ALARM_TIME_KEY, alarm.toISOString());
+      await AsyncStorage.setItem(ALARM_ENABLED_KEY, "true");
+
       await Notifications.cancelAllScheduledNotificationsAsync();
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: "알람",
-          body: "일어날 시간입니다!",
+          title: "기상 알람",
+          body: "일어날 시간입니다! 🌅",
           sound: true,
         },
         trigger: {
@@ -255,7 +263,6 @@ const SleepScreen = () => {
           date: alarm,
         },
       });
-      console.log("알람 설정:", alarm.toLocaleString());
     } catch (error) {
       console.error("알람 설정 오류:", error);
     }
@@ -264,6 +271,7 @@ const SleepScreen = () => {
   const cancelAlarm = async () => {
     if (Platform.OS === "web") return;
     try {
+      await AsyncStorage.setItem(ALARM_ENABLED_KEY, "false");
       await Notifications.cancelAllScheduledNotificationsAsync();
     } catch (error) {
       console.error("알람 취소 오류:", error);

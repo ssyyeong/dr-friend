@@ -6,6 +6,7 @@ import {
   TouchableWithoutFeedback,
   Text,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "../../shared/components/common/SafeAreaView";
 import styled, { useTheme } from "styled-components/native";
@@ -239,6 +240,18 @@ const XAxisRow = styled.View`
 const XLabel = styled.Text`
   font-size: 10px;
   color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+const LoadingContainer = styled.View`
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+`;
+
+const LoadingText = styled.Text`
+  font-size: 16px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  margin-top: 16px;
 `;
 
 const screenWidth = Dimensions.get("window").width;
@@ -733,13 +746,14 @@ const StatsScreen = () => {
     );
   };
 
-  // 로딩 중이거나 데이터 없을 때
+  // 로딩 중일 때
   if (fitbitLoading || fitbitPrevLoading) {
     return (
       <Screen>
-        <Content>
-          <MonthTitle>데이터 불러오는 중...</MonthTitle>
-        </Content>
+        <LoadingContainer>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <LoadingText>데이터를 불러오는 중입니다</LoadingText>
+        </LoadingContainer>
       </Screen>
     );
   }

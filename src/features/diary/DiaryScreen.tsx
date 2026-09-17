@@ -1192,23 +1192,23 @@ const DiaryScreen = () => {
                   ? "조금 더 노력해봐요!"
                   : "수면이 많이 부족해요.";
 
-          const highlightPart =
+          const goalMessage =
             achieveRate >= 100
-              ? "목표를 달성"
+              ? { prefix: "", highlight: "목표 달성", suffix: "!" }
               : achieveRate >= 80
-                ? "거의 도달"
+                ? { prefix: "목표에 ", highlight: "거의 도달", suffix: " 했어요!" }
                 : achieveRate >= 60
-                  ? "조금 더 노력"
-                  : "많이 부족";
+                  ? { prefix: "", highlight: "조금 더 노력", suffix: "해봐요!" }
+                  : { prefix: "수면이 ", highlight: "많이 부족", suffix: "해요." };
 
           return (
             <View key={goal.SLEEP_GOAL_IDENTIFICATION_CODE}>
               {/* 상태 메시지 + 목표 관리 버튼 */}
               <GoalHeaderRow>
                 <GoalStatusText>
-                  목표에{" "}
-                  <GoalStatusHighlight>{highlightPart}</GoalStatusHighlight>{" "}
-                  했어요!
+                  {goalMessage.prefix}
+                  <GoalStatusHighlight>{goalMessage.highlight}</GoalStatusHighlight>
+                  {goalMessage.suffix}
                 </GoalStatusText>
                 <GoalManageButton
                   activeOpacity={0.7}

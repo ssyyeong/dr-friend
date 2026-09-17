@@ -52,6 +52,7 @@ import CustomRoutineScreen from "../../features/auth/selftest/CustomRoutineScree
 import SurveyResultProfileScreen from "../../features/profile/survey/SurveyResultProfileScreen";
 import SleepGoalFormScreen from "../../features/profile/sleepgoal/SleepGoalFormScreen";
 import SleepGoalScreen from "../../features/profile/sleepgoal/SleepGoalScreen";
+import TermsPolicyScreen from "../../features/profile/TermsPolicyScreen";
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -120,6 +121,7 @@ export type ProfileStackParamList = {
   CustomRoutine: { result: any };
   SleepGoal: undefined;
   SleepGoalForm: { mode?: "create" | "edit"; sleepGoal?: any };
+  TermsPolicy: undefined;
 };
 
 export type CareStackParamList = {
@@ -248,6 +250,7 @@ const ProfileStackNavigator = () => {
         name="SleepGoalForm"
         component={SleepGoalFormScreen}
       />
+      <ProfileStack.Screen name="TermsPolicy" component={TermsPolicyScreen} />
     </ProfileStack.Navigator>
   );
 };

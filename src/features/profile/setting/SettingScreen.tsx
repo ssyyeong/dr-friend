@@ -307,7 +307,6 @@ const SettingScreen: React.FC = () => {
   const [birthYear, setBirthYear] = useState<string>("");
   const [birthMonth, setBirthMonth] = useState<string>("");
   const [birthDay, setBirthDay] = useState<string>("");
-  const [productStatus, setProductStatus] = useState<string>("");
   const [productList, setProductList] = useState<string[]>([]);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [currentModal, setCurrentModal] = useState<
@@ -367,10 +366,12 @@ const SettingScreen: React.FC = () => {
               setBirthDay(parts[2].replace(/^0+/, "") || "");
             }
           }
-          if (user.PRODUCT_STATUS) {
-            setProductStatus(user.PRODUCT_STATUS);
-            if (user.PRODUCT_STATUS === "HAS") {
-              setProductList(JSON.parse(user.PRODUCT_LIST));
+          if (user.PRODUCT_LIST) {
+            try {
+              const parsed = JSON.parse(user.PRODUCT_LIST);
+              setProductList(Array.isArray(parsed) ? parsed : []);
+            } catch {
+              setProductList([]);
             }
           }
         }
@@ -404,38 +405,38 @@ const SettingScreen: React.FC = () => {
     } else if (type === "height") {
       setTempValue(height);
     } else if (type === "birthday-year") {
-      setTempValue(birthYear);
-      // ✅ FlatList scrollToIndex 사용
-      const yearIdx = Math.max(0, yearOptions.indexOf(birthYear));
+      const initialYear = birthYear || String(new Date().getFullYear() - 30);
+      setTempValue(initialYear);
+      // ✅ FlatList scrollToOffset 사용 (scrollToIndex보다 안정적)
+      const yearIdx = Math.max(0, yearOptions.indexOf(initialYear));
       setTimeout(() => {
-        yearFlatListRef.current?.scrollToIndex({
-          index: yearIdx,
+        yearFlatListRef.current?.scrollToOffset({
+          offset: yearIdx * ITEM_HEIGHT,
           animated: false,
-          viewPosition: 0.5,
         });
-      }, 250);
+      }, 150);
     } else if (type === "birthday-month") {
-      setTempValue(birthMonth);
-      const monthIdx = birthMonth
-        ? Math.max(0, parseInt(birthMonth, 10) - 1)
-        : 0;
+      const initialMonth = birthMonth || "1";
+      setTempValue(initialMonth);
+      const monthIdx = Math.max(0, parseInt(initialMonth, 10) - 1);
       birthdayScrollYRef.current = monthIdx * ITEM_HEIGHT;
       setTimeout(() => {
         birthdayPickerRef.current?.scrollTo({
           y: monthIdx * ITEM_HEIGHT,
           animated: false,
         });
-      }, 100);
+      }, 150);
     } else if (type === "birthday-day") {
-      setTempValue(birthDay);
-      const dayIdx = birthDay ? Math.max(0, parseInt(birthDay, 10) - 1) : 0;
+      const initialDay = birthDay || "1";
+      setTempValue(initialDay);
+      const dayIdx = Math.max(0, parseInt(initialDay, 10) - 1);
       birthdayScrollYRef.current = dayIdx * ITEM_HEIGHT;
       setTimeout(() => {
         birthdayPickerRef.current?.scrollTo({
           y: dayIdx * ITEM_HEIGHT,
           animated: false,
         });
-      }, 100);
+      }, 150);
     }
     setModalVisible(true);
     if (
@@ -587,10 +588,10 @@ const SettingScreen: React.FC = () => {
                   0,
                   Math.min(index, yearOptions.length - 1),
                 );
-                yearFlatListRef.current?.scrollToIndex({
-                  index: targetIndex,
+                const targetY = targetIndex * ITEM_HEIGHT;
+                yearFlatListRef.current?.scrollToOffset({
+                  offset: targetY,
                   animated: true,
-                  viewPosition: 0.5,
                 });
                 setTempValue(yearOptions[targetIndex]);
               }}
@@ -601,10 +602,10 @@ const SettingScreen: React.FC = () => {
                   0,
                   Math.min(index, yearOptions.length - 1),
                 );
-                yearFlatListRef.current?.scrollToIndex({
-                  index: targetIndex,
+                const targetY = targetIndex * ITEM_HEIGHT;
+                yearFlatListRef.current?.scrollToOffset({
+                  offset: targetY,
                   animated: true,
-                  viewPosition: 0.5,
                 });
                 setTempValue(yearOptions[targetIndex]);
               }}
@@ -774,13 +775,8 @@ const SettingScreen: React.FC = () => {
         <Content>
           <Section>
             <SectionTitle>계정</SectionTitle>
-            <AccountCard activeOpacity={1}>
+            <AccountCard activeOpacity={1} style={{ cursor: "default" }}>
               <AccountEmail>{email || "이메일 없음"}</AccountEmail>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={theme.colors.gray100}
-              />
             </AccountCard>
           </Section>
 
@@ -843,16 +839,15 @@ const SettingScreen: React.FC = () => {
               onPress={() => navigation.navigate("ProductSelect")}
             >
               <ProductLeft>
-                <ProductLabel>
-                  {productStatus === "Y" ? "제품 보유중" : "선택"}
-                </ProductLabel>
-                <ProductValue>
-                  {productStatus === "Y" &&
-                    productList.map((product) => product).join(", ")}
-                  {productList.length > 0
-                    ? "외 " + (productList.length - 1)
-                    : ""}
-                </ProductValue>
+                {productList.length > 0 ? (
+                  <ProductLabel>
+                    {productList.length > 1
+                      ? `${productList[0]} 외 ${productList.length - 1}개`
+                      : productList[0]}
+                  </ProductLabel>
+                ) : (
+                  <ProductLabel>제품 없음</ProductLabel>
+                )}
               </ProductLeft>
               <Ionicons
                 name="chevron-forward"

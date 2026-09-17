@@ -261,6 +261,8 @@ const SleepHelpListScreen = () => {
   const [items, setItems] = useState<any[]>([]);
   const [playingItem, setPlayingItem] = useState<any | null>(null);
   const [isYoutubeModalVisible, setIsYoutubeModalVisible] = useState(false);
+  const [isWebViewLoading, setIsWebViewLoading] = useState(true);
+  const [webViewError, setWebViewError] = useState(false);
 
   // ✅ 핵심 수정 2: 모달 열릴 때마다 WebView를 새로 마운트하기 위한 key
   const [webviewKey, setWebviewKey] = useState(0);
@@ -302,6 +304,8 @@ const SleepHelpListScreen = () => {
 
   const handleItemPress = (item: any) => {
     setPlayingItem(item);
+    setIsWebViewLoading(true);
+    setWebViewError(false);
     // ✅ 핵심 수정 3: 아이템 누를 때마다 key 증가 → WebView 완전 재마운트
     setWebviewKey((prev) => prev + 1);
     setIsYoutubeModalVisible(true);
@@ -443,24 +447,70 @@ const SleepHelpListScreen = () => {
             {playingItem?.youtubeId ? (
               // ✅ 핵심 수정 4: source={{ uri }} 대신 source={{ html }} 사용
               //    originWhitelist, mixedContentMode, allowsInlineMediaPlayback 추가
-              <WebView
-                key={webviewKey}
-                source={{ html: getYoutubeIframeHtml(playingItem.youtubeId) }}
-                style={{
-                  width: SCREEN_WIDTH,
-                  height: (SCREEN_WIDTH * 9) / 16,
-                }}
-                originWhitelist={["*"]}
-                allowsInlineMediaPlayback={true}
-                mediaPlaybackRequiresUserAction={false}
-                allowsFullscreenVideo={true}
-                javaScriptEnabled={true}
-                domStorageEnabled={true}
-                // ✅ iOS에서 자동재생 허용
-                allowsAirPlayForMediaPlayback={true}
-                // ✅ Android mixed content 허용
-                mixedContentMode="always"
-              />
+              <View style={{ width: SCREEN_WIDTH, height: (SCREEN_WIDTH * 9) / 16 }}>
+                <WebView
+                  key={webviewKey}
+                  source={{ html: getYoutubeIframeHtml(playingItem.youtubeId) }}
+                  style={{
+                    width: SCREEN_WIDTH,
+                    height: (SCREEN_WIDTH * 9) / 16,
+                    backgroundColor: "#000",
+                  }}
+                  originWhitelist={["*"]}
+                  allowsInlineMediaPlayback={true}
+                  mediaPlaybackRequiresUserAction={false}
+                  allowsFullscreenVideo={true}
+                  javaScriptEnabled={true}
+                  domStorageEnabled={true}
+                  // ✅ iOS에서 자동재생 허용
+                  allowsAirPlayForMediaPlayback={true}
+                  // ✅ Android mixed content 허용
+                  mixedContentMode="always"
+                  onLoadStart={() => setIsWebViewLoading(true)}
+                  onLoadEnd={() => setIsWebViewLoading(false)}
+                  onError={(e) => {
+                    console.error("WebView 에러:", e.nativeEvent);
+                    setWebViewError(true);
+                    setIsWebViewLoading(false);
+                  }}
+                  onHttpError={(e) => {
+                    console.error("WebView HTTP 에러:", e.nativeEvent);
+                    setWebViewError(true);
+                  }}
+                />
+                {isWebViewLoading && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      backgroundColor: "#000",
+                    }}
+                  >
+                    <DescriptionLine>로딩 중...</DescriptionLine>
+                  </View>
+                )}
+                {webViewError && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      backgroundColor: "#000",
+                    }}
+                  >
+                    <DescriptionLine>콘텐츠를 불러올 수 없습니다.</DescriptionLine>
+                  </View>
+                )}
+              </View>
             ) : (
               <View
                 style={{

@@ -266,6 +266,7 @@ type SleepScreenNavigationProp = NativeStackNavigationProp<
 >;
 
 const SLEEP_START_TIME_KEY = "@sleep_start_time";
+const ALARM_TIME_KEY = "@alarm_time";
 
 const AlarmScreen = () => {
   const theme = useTheme();
@@ -278,6 +279,29 @@ const AlarmScreen = () => {
   );
   const [sleepStartTime, setSleepStartTime] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // 저장된 알람 시간 불러오기
+  useEffect(() => {
+    const loadAlarmTime = async () => {
+      try {
+        const storedAlarmTime = await AsyncStorage.getItem(ALARM_TIME_KEY);
+        if (storedAlarmTime) {
+          const savedAlarm = new Date(storedAlarmTime);
+          setAlarmTime(savedAlarm);
+
+          // 알람 시간이 이미 지났으면 다시 스케줄링
+          const now = new Date();
+          if (savedAlarm <= now) {
+            savedAlarm.setDate(savedAlarm.getDate() + 1);
+          }
+          scheduleAlarm(savedAlarm);
+        }
+      } catch (error) {
+        console.error("알람 시간 불러오기 실패:", error);
+      }
+    };
+    loadAlarmTime();
+  }, []);
 
   const [isAlarmChangeModalVisible, setIsAlarmChangeModalVisible] =
     useState(false);
@@ -374,6 +398,9 @@ const AlarmScreen = () => {
       const alarm = new Date(time);
       if (alarm <= now) alarm.setDate(alarm.getDate() + 1);
 
+      // AsyncStorage에 저장
+      await AsyncStorage.setItem(ALARM_TIME_KEY, alarm.toISOString());
+
       await Notifications.cancelAllScheduledNotificationsAsync();
       await Notifications.scheduleNotificationAsync({
         content: {
@@ -400,7 +427,7 @@ const AlarmScreen = () => {
     }
   };
 
-  const handleAlarmConfirm = () => {
+  const handleAlarmConfirm = async () => {
     const hours24 =
       tempAmPm === "PM"
         ? tempHour === 12
@@ -412,6 +439,20 @@ const AlarmScreen = () => {
 
     const newAlarm = new Date();
     newAlarm.setHours(hours24, tempMinute, 0, 0);
+
+    // 알람 시간이 현재보다 이전이면 다음 날로 설정
+    const now = new Date();
+    if (newAlarm <= now) {
+      newAlarm.setDate(newAlarm.getDate() + 1);
+    }
+
+    // AsyncStorage에 저장
+    try {
+      await AsyncStorage.setItem(ALARM_TIME_KEY, newAlarm.toISOString());
+    } catch (error) {
+      console.error("알람 시간 저장 실패:", error);
+    }
+
     setAlarmTime(newAlarm);
     scheduleAlarm(newAlarm);
     setIsAlarmChangeModalVisible(false);

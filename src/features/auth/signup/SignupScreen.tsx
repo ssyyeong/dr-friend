@@ -1,9 +1,11 @@
 import React, { useState } from "react";
-import styled from "styled-components/native";
+import styled, { useTheme } from "styled-components/native";
 import { SafeAreaView } from "../../../shared/components/common/SafeAreaView";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
-import { ScrollView, Alert } from "react-native";
+import { ScrollView, Alert, Modal, Pressable, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AuthStackParamList } from "../../../app/navigation/RootNavigator";
 import Button from "../../../shared/components/common/Button";
 import AppMemberController from "../../../services/AppMemberController";
@@ -132,6 +134,67 @@ const RequiredText = styled.Text`
   margin-left: 4px;
 `;
 
+const ViewButton = styled.TouchableOpacity`
+  padding: 4px 8px;
+`;
+
+const ViewButtonText = styled.Text`
+  color: ${({ theme }) => theme.colors.gray400};
+  font-size: 14px;
+`;
+
+const ModalContainer = styled.View`
+  flex: 1;
+  background-color: ${({ theme }) => theme.colors.background};
+`;
+
+const ModalHeader = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom-width: 1px;
+  border-bottom-color: ${({ theme }) => theme.colors.gray700};
+`;
+
+const ModalTitle = styled.Text`
+  font-size: 18px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+const ModalCloseButton = styled.TouchableOpacity`
+  padding: 4px;
+`;
+
+const ModalContent = styled.ScrollView`
+  flex: 1;
+  padding: 16px;
+`;
+
+const TermsSectionTitle = styled.Text`
+  font-size: 16px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.text};
+  margin-top: 16px;
+  margin-bottom: 8px;
+`;
+
+const TermsParagraph = styled.Text`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.gray200};
+  line-height: 22px;
+  margin-bottom: 8px;
+`;
+
+const TermsSubSection = styled.Text`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.gray200};
+  line-height: 22px;
+  margin-bottom: 6px;
+  padding-left: 8px;
+`;
+
 const ButtonContainer = styled.View`
   position: absolute;
   bottom: 50;
@@ -143,6 +206,9 @@ const ButtonContainer = styled.View`
 `;
 
 const SignupScreen: React.FC<Props> = ({ navigation }) => {
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -157,6 +223,15 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
   const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [verifyCode, setVerifyCode] = useState("");
+
+  // 약관 모달 상태
+  const [termsModalVisible, setTermsModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<"terms" | "privacy">("terms");
+
+  const openTermsModal = (type: "terms" | "privacy") => {
+    setModalType(type);
+    setTermsModalVisible(true);
+  };
 
   const handleAgreeAll = () => {
     const newValue = !agreeAll;
@@ -271,21 +346,6 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  // 본인 인증 버튼 핸들러
-  const handleVerifyIdentity = () => {
-    if (isVerified) {
-      return; // 이미 인증 완료
-    }
-
-    if (isVerificationSent) {
-      // 인증번호 검증
-      handleVerifyCode();
-    } else {
-      // 인증번호 전송
-      handleSendVerificationCode();
-    }
-  };
-
   const handleSignup = async () => {
     // 필수 약관 동의 체크
     if (!agreeTerms || !agreePrivacy) {
@@ -382,7 +442,7 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
                   editable={!isVerified} // 인증 완료 시 수정 불가
                 />
                 <VerifyButton
-                  onPress={handleVerifyIdentity}
+                  onPress={handleSendVerificationCode}
                   disabled={isLoading || isVerified}
                   style={{ opacity: isLoading || isVerified ? 0.5 : 1 }}
                 >
@@ -390,20 +450,29 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
                     {isVerified
                       ? "인증완료"
                       : isVerificationSent
-                        ? "인증하기"
+                        ? "재전송"
                         : "본인 인증"}
                   </VerifyButtonText>
                 </VerifyButton>
               </PhoneInputContainer>
 
               {isVerificationSent && !isVerified && (
-                <Input
-                  placeholder="인증번호"
-                  value={verificationCode}
-                  onChangeText={setVerificationCode}
-                  keyboardType="number-pad"
-                  autoFocus
-                />
+                <PhoneInputContainer>
+                  <PhoneInput
+                    placeholder="인증번호"
+                    value={verificationCode}
+                    onChangeText={setVerificationCode}
+                    keyboardType="number-pad"
+                    autoFocus
+                  />
+                  <VerifyButton
+                    onPress={handleVerifyCode}
+                    disabled={isLoading || !verificationCode}
+                    style={{ opacity: isLoading || !verificationCode ? 0.5 : 1 }}
+                  >
+                    <VerifyButtonText>확인</VerifyButtonText>
+                  </VerifyButton>
+                </PhoneInputContainer>
               )}
 
               {isVerified && (
@@ -443,11 +512,12 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
                     이용약관에 동의합니다.
                     <RequiredText>(필수)</RequiredText>
                   </AgreementText>
+                  <ViewButton onPress={() => openTermsModal("terms")}>
+                    <ViewButtonText>보기</ViewButtonText>
+                  </ViewButton>
                 </AgreementItem>
 
-                <AgreementItemLast
-                  onPress={handleAgreePrivacy}
-                >
+                <AgreementItemLast onPress={handleAgreePrivacy}>
                   <CheckboxContainer>
                     {agreePrivacy ? (
                       <PrimaryCheckSvg width={20} height={20} />
@@ -459,6 +529,9 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
                     개인정보 수집 및 이용에 동의합니다.
                     <RequiredText>(필수)</RequiredText>
                   </AgreementText>
+                  <ViewButton onPress={() => openTermsModal("privacy")}>
+                    <ViewButtonText>보기</ViewButtonText>
+                  </ViewButton>
                 </AgreementItemLast>
               </AgreementContainer>
             </Content>
@@ -470,6 +543,95 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
           </Button>
         </ButtonContainer>
       </Screen>
+
+      {/* 약관 모달 */}
+      <Modal
+        visible={termsModalVisible}
+        animationType="slide"
+        onRequestClose={() => setTermsModalVisible(false)}
+      >
+        <ModalContainer style={{ paddingTop: insets.top }}>
+          <ModalHeader>
+            <ModalTitle>
+              {modalType === "terms" ? "이용약관" : "개인정보 수집 및 이용"}
+            </ModalTitle>
+            <ModalCloseButton onPress={() => setTermsModalVisible(false)}>
+              <Ionicons name="close" size={24} color={theme.colors.text} />
+            </ModalCloseButton>
+          </ModalHeader>
+          <ModalContent showsVerticalScrollIndicator={false}>
+            {modalType === "terms" ? (
+              <>
+                <TermsSectionTitle>닥터프렌드 케어 플러스 서비스 이용약관</TermsSectionTitle>
+                <TermsParagraph>운영자: 주식회사 디에프월드</TermsParagraph>
+
+                <TermsSectionTitle>제1조 (목적)</TermsSectionTitle>
+                <TermsParagraph>
+                  이 약관은 주식회사 디에프월드(이하 "회사")가 제공하는 닥터프렌드 케어 플러스 애플리케이션과 이에 부수하는 서비스(이하 "서비스")의 이용에 관하여 회사와 회원 사이의 권리·의무, 책임사항 및 이용 조건을 정함을 목적으로 합니다.
+                </TermsParagraph>
+
+                <TermsSectionTitle>제2조 (용어의 정의)</TermsSectionTitle>
+                <TermsSubSection>• "회원"이란 이 약관에 동의하고 회사가 정한 절차에 따라 가입하여 서비스를 이용하는 사람을 말합니다.</TermsSubSection>
+                <TermsSubSection>• "계정"이란 회원의 식별과 서비스 이용을 위하여 생성되는 로그인 정보와 이에 연결된 서비스 이용 단위를 말합니다.</TermsSubSection>
+                <TermsSubSection>• "연동기기"란 서비스와 연결하여 수면·활동·생체 관련 정보를 전송하는 웨어러블 기기, 센서 또는 그 밖에 회사가 지원하는 기기를 말합니다.</TermsSubSection>
+                <TermsSubSection>• "측정정보"란 연동기기, 외부 플랫폼 또는 회원의 입력을 통해 생성되어 서비스가 처리하는 수면·활동·생체 관련 정보를 말합니다.</TermsSubSection>
+                <TermsSubSection>• "분석정보"란 측정정보와 이용기록을 바탕으로 서비스가 제공하는 수면 기록, 점수, 추세, 통계, 코칭 또는 이에 준하는 정보를 말합니다.</TermsSubSection>
+
+                <TermsSectionTitle>제3조 (약관의 게시, 효력 및 개정)</TermsSectionTitle>
+                <TermsSubSection>① 회사는 회원이 이 약관을 쉽게 확인할 수 있도록 가입 화면, 서비스 내 설정 또는 연결 화면 등에 게시합니다.</TermsSubSection>
+                <TermsSubSection>② 회사는 관계 법령을 위반하지 않는 범위에서 이 약관을 개정할 수 있습니다.</TermsSubSection>
+                <TermsSubSection>③ 회사가 약관을 개정하는 경우 적용일과 개정 사유를 명시하여 원칙적으로 적용일 7일 전부터 공지합니다.</TermsSubSection>
+
+                <TermsSectionTitle>제5조 (이용계약의 성립)</TermsSectionTitle>
+                <TermsSubSection>① 이용계약은 서비스를 이용하려는 사람이 이 약관과 필요한 개인정보 처리 사항을 확인하고 동의한 후 가입을 신청하고, 회사가 이를 승인함으로써 성립합니다.</TermsSubSection>
+                <TermsSubSection>② 회사는 휴대전화, 전자우편 또는 소셜 계정 등을 이용한 인증 절차를 제공하거나 요구할 수 있습니다.</TermsSubSection>
+
+                <TermsSectionTitle>제6조 (이용 연령)</TermsSectionTitle>
+                <TermsSubSection>① 서비스에는 만 14세 이상인 사람만 가입할 수 있습니다.</TermsSubSection>
+
+                <TermsSectionTitle>제13조 (건강관리 정보와 의료적 한계)</TermsSectionTitle>
+                <TermsSubSection>① 서비스의 분석, 코칭과 콘텐츠는 일상적인 건강관리와 생활습관 개선을 돕기 위한 참고 정보입니다.</TermsSubSection>
+                <TermsSubSection>② 서비스는 질병의 진단·치료·예방, 의약품 처방, 응급상황 판단 또는 의료인의 전문적인 판단을 대신하지 않습니다.</TermsSubSection>
+
+                <TermsSectionTitle>제28조 (준거법과 분쟁 해결)</TermsSectionTitle>
+                <TermsSubSection>① 이 약관의 해석과 서비스 이용에 관해서는 대한민국 법령을 적용합니다.</TermsSubSection>
+
+                <TermsParagraph style={{ marginTop: 20, color: theme.colors.gray400 }}>
+                  * 전체 약관은 프로필 {'>'} 이용약관/개인정보 정책에서 확인할 수 있습니다.
+                </TermsParagraph>
+              </>
+            ) : (
+              <>
+                <TermsSectionTitle>개인정보 수집 및 이용 동의</TermsSectionTitle>
+
+                <TermsSectionTitle>1. 수집하는 개인정보 항목</TermsSectionTitle>
+                <TermsSubSection>• 필수항목: 이메일 주소, 비밀번호, 휴대전화번호</TermsSubSection>
+                <TermsSubSection>• 선택항목: 생년월일, 성별, 신장, 체중</TermsSubSection>
+                <TermsSubSection>• 자동 수집 항목: 서비스 이용 기록, 접속 로그, 기기 정보</TermsSubSection>
+                <TermsSubSection>• 건강정보: 수면 데이터, 활동량 데이터 (연동기기 이용 시)</TermsSubSection>
+
+                <TermsSectionTitle>2. 개인정보의 수집 및 이용 목적</TermsSectionTitle>
+                <TermsSubSection>• 회원 가입 및 관리: 회원제 서비스 제공에 따른 본인 식별·인증, 회원자격 유지·관리</TermsSubSection>
+                <TermsSubSection>• 서비스 제공: 수면 측정, 분석, 코칭 등 서비스 제공</TermsSubSection>
+                <TermsSubSection>• 고객 문의 대응: 민원 처리, 공지사항 전달</TermsSubSection>
+
+                <TermsSectionTitle>3. 개인정보의 보유 및 이용 기간</TermsSectionTitle>
+                <TermsSubSection>• 회원 정보: 회원 탈퇴 시까지 (단, 관계 법령에 따라 보존이 필요한 경우 해당 기간)</TermsSubSection>
+                <TermsSubSection>• 건강정보: 수집일로부터 1년 (또는 회원 탈퇴 시)</TermsSubSection>
+
+                <TermsSectionTitle>4. 동의 거부권 및 거부 시 불이익</TermsSectionTitle>
+                <TermsParagraph>
+                  귀하는 개인정보 수집 및 이용에 대한 동의를 거부할 권리가 있습니다. 다만, 필수항목에 대한 동의를 거부할 경우 회원가입이 제한됩니다.
+                </TermsParagraph>
+
+                <TermsParagraph style={{ marginTop: 20, color: theme.colors.gray400 }}>
+                  * 전체 개인정보처리방침은 프로필 {'>'} 이용약관/개인정보 정책에서 확인할 수 있습니다.
+                </TermsParagraph>
+              </>
+            )}
+          </ModalContent>
+        </ModalContainer>
+      </Modal>
     </GradientBackground>
   );
 };

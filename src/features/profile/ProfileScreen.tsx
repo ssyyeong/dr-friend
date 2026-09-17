@@ -307,7 +307,11 @@ const ProfileScreen = () => {
       icon: require("../../../assets/icon/presentation.svg"),
       label: "평가하기",
     },
-    { icon: require("../../../assets/icon/lock.svg"), label: "개인정보 정책" },
+    {
+      icon: require("../../../assets/icon/lock.svg"),
+      label: "이용약관 / 개인정보 정책",
+      onPress: () => navigation.navigate("TermsPolicy"),
+    },
   ];
 
   const handleLogout = async () => {

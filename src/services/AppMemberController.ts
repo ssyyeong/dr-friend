@@ -57,10 +57,8 @@ class AppMemberController {
   }
 
   async getProfile(option: IControllerOptions): Promise<any> {
-    const params = option;
     const url = `${this.apiUrl}${this.rootRoute}/${this.role}/${this.modelId}/profile`;
-    const response = await axios.get(url, params);
-
+    const response = await axios.get(url, { params: option });
     return response;
   }
 
@@ -87,7 +85,7 @@ class AppMemberController {
   }
 
   async sendPhoneNumberVerificationCode(
-    option: IControllerOptions
+    option: IControllerOptions,
   ): Promise<any> {
     console.log("sendPhoneNumberVerificationCode", option);
     const params = option;
@@ -111,6 +109,22 @@ class AppMemberController {
     const url = `${this.apiUrl}${this.rootRoute}/${this.role}/${this.modelId}/validate_phone_auth`;
     const response = await axios.post(url, params);
 
+    return response;
+  }
+
+  async updateProfile(option: IControllerOptions): Promise<any> {
+    const { APP_MEMBER_IDENTIFICATION_CODE, ...updateFields } = option;
+    const data = {
+      FIND_OPTION_KEY_LIST: JSON.stringify({ APP_MEMBER_IDENTIFICATION_CODE }),
+      UPDATE_OPTION_KEY_LIST: JSON.stringify(updateFields),
+    };
+    const url = `${this.apiUrl}${this.rootRoute}/${this.role}/${this.modelId}/update`;
+    const response = await axios.put(url, data, {
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
     return response;
   }
 }

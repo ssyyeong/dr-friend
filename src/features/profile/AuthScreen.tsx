@@ -5,6 +5,7 @@ import ToggleSwitch from "../../shared/components/common/ToggleSwitch";
 import { getMemberId } from "../../services/authService";
 import AppMemberController from "../../services/AppMemberController";
 import Controller from "../../services/controller";
+
 const Screen = styled.View`
   flex: 1;
   background-color: ${({ theme }) => theme.colors.background};
@@ -51,27 +52,28 @@ const AuthScreen = () => {
 
   useEffect(() => {
     const fetchUserInfo = async () => {
-      const memberId = await getMemberId();
-      if (!memberId) {
-        return;
-      }
-      setMemberId(memberId);
+      try {
+        const memberId = await getMemberId();
+        if (!memberId) {
+          return;
+        }
+        setMemberId(memberId);
 
-      const controller = new AppMemberController({
-        modelName: "AppMember",
-        modelId: "app_member",
-      });
-      const response = await controller.getProfile({
-        APP_MEMBER_IDENTIFICATION_CODE: memberId,
-      });
-      console.log("response", response);
-      if (response?.status === 200) {
-        setMicrophoneEnabled(
-          response?.data?.result?.user?.MICROPHONE_ENABLED === "Y"
-        );
-        setNotificationEnabled(
-          response?.data?.result?.user?.NOTIFICATIONS_ENABLED === "Y"
-        );
+        const controller = new Controller({
+          modelName: "AppMember",
+          modelId: "app_member",
+        });
+        const response = await controller.findOne({
+          APP_MEMBER_IDENTIFICATION_CODE: memberId,
+        });
+        if (response?.status === 200) {
+          setMicrophoneEnabled(response?.result?.MIC_PERMISSION_YN === "Y");
+          setNotificationEnabled(
+            response?.result?.NOTIFICATION_PERMISSION_YN === "Y",
+          );
+        }
+      } catch (error) {
+        console.error("권한 정보 불러오기 실패:", error);
       }
     };
     fetchUserInfo();
@@ -79,27 +81,26 @@ const AuthScreen = () => {
 
   const handleMicrophoneChange = async (value: boolean) => {
     setMicrophoneEnabled(value);
-    const controller = new Controller({
+    const controller = new AppMemberController({
       modelName: "AppMember",
       modelId: "app_member",
     });
-    const response = await controller.update({
+    await controller.updateProfile({
       APP_MEMBER_IDENTIFICATION_CODE: memberId,
-      MICROPHONE_ENABLED: value ? "Y" : "N",
+      MIC_PERMISSION_YN: value ? "Y" : "N",
     });
   };
 
   const handleNotificationChange = async (value: boolean) => {
     setNotificationEnabled(value);
-    const controller = new Controller({
+    const controller = new AppMemberController({
       modelName: "AppMember",
       modelId: "app_member",
     });
-    const response = await controller.update({
+    await controller.updateProfile({
       APP_MEMBER_IDENTIFICATION_CODE: memberId,
-      NOTIFICATIONS_ENABLED: value ? "Y" : "N",
+      NOTIFICATION_PERMISSION_YN: value ? "Y" : "N",
     });
-    console.log("response", response);
   };
 
   return (
