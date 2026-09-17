@@ -160,7 +160,7 @@ const SleepDiaryModal: React.FC<SleepDiaryModalProps> = ({
             },
           ]}
         >
-          <ModalCard style={{ paddingBottom: Math.max(insets.bottom, 24) }}>
+          <ModalCard style={{ paddingBottom: Math.max(insets.bottom + 16, 40) }}>
             <ModalHeader>
               <ModalTitle>{title}</ModalTitle>
               <CloseButton onPress={handleCancel} activeOpacity={0.8}>
