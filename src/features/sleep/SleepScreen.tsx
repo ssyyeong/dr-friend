@@ -80,6 +80,13 @@ const SettingTitle = styled.Text`
   color: ${({ theme }) => theme.colors.text};
 `;
 
+const AlarmInfoText = styled.Text`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.secondary};
+  text-align: center;
+  margin-top: 12px;
+`;
+
 const TimePickerContainer = styled.View`
   align-items: center;
   margin-top: 8px;
@@ -280,6 +287,29 @@ const SleepScreen = () => {
     };
   };
 
+  // 실제 알람이 울릴 시간 계산 및 표시 문구 생성
+  const getAlarmDisplayInfo = () => {
+    const now = new Date();
+    const alarm = new Date(alarmTime);
+
+    const isNextDay = alarm <= now;
+    if (isNextDay) {
+      alarm.setDate(alarm.getDate() + 1);
+    }
+
+    const hours = alarm.getHours();
+    const minutes = alarm.getMinutes();
+    const ampm = hours >= 12 ? "오후" : "오전";
+    const displayHours = hours % 12 || 12;
+    const timeStr = `${ampm} ${displayHours}:${minutes.toString().padStart(2, "0")}`;
+
+    if (isNextDay) {
+      return `내일 ${timeStr}에 알람이 울립니다`;
+    } else {
+      return `오늘 ${timeStr}에 알람이 울립니다`;
+    }
+  };
+
   const formatDate = (date: Date) => {
     const weekdays = [
       "일요일",
@@ -464,6 +494,9 @@ const SleepScreen = () => {
                 )}
               </TimePickerWrapper>
             </TimePickerContainer>
+            {alarmEnabled && (
+              <AlarmInfoText>{getAlarmDisplayInfo()}</AlarmInfoText>
+            )}
           </SettingCard>
 
           {/* <SettingCard>
