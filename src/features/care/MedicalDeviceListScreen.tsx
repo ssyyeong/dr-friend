@@ -227,25 +227,45 @@ const MedicalDeviceListScreen = () => {
   }, []);
 
   const fetchProducts = async () => {
-    const controller = new Controller({
-      modelName: "CareDevice",
-      modelId: "care_device",
-    });
-    const response = await controller.findAll({ IS_EXPOSED: "Y" });
-    if (response?.status === 200) {
-      const rows = response.result?.rows ?? response.result ?? [];
-      setProducts(rows);
+    try {
+      const controller = new Controller({
+        modelName: "CareDevice",
+        modelId: "care_device",
+      });
+      const response = await controller.findAll({ IS_EXPOSED: "Y" });
+      console.log("CareDevice API 응답:", response);
+
+      // 응답 구조에 따라 데이터 추출
+      const rows = response?.result?.rows ?? response?.rows ?? response?.result ?? [];
+      if (Array.isArray(rows) && rows.length > 0) {
+        setProducts(rows);
+      } else {
+        console.log("제품 데이터가 없습니다.");
+      }
+    } catch (error) {
+      console.error("제품 목록 조회 실패:", error);
     }
   };
 
   const fetchCareBanner = async () => {
-    const controller = new Controller({
-      modelName: "CareBanner",
-      modelId: "care_banner",
-    });
-    const response = await controller.findAll({});
-    if (response?.status === 200 && response.result.rows.length > 0) {
-      setCareBannerImage(JSON.parse(response.result.rows[0].IMAGE_URL)[0]);
+    try {
+      const controller = new Controller({
+        modelName: "CareBanner",
+        modelId: "care_banner",
+      });
+      const response = await controller.findAll({});
+      console.log("CareBanner API 응답:", response);
+
+      const rows = response?.result?.rows ?? response?.rows ?? response?.result ?? [];
+      if (Array.isArray(rows) && rows.length > 0 && rows[0].IMAGE_URL) {
+        try {
+          setCareBannerImage(JSON.parse(rows[0].IMAGE_URL)[0]);
+        } catch {
+          setCareBannerImage(rows[0].IMAGE_URL);
+        }
+      }
+    } catch (error) {
+      console.error("배너 이미지 조회 실패:", error);
     }
   };
 
