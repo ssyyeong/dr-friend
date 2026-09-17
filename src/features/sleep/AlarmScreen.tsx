@@ -6,6 +6,7 @@ import {
   Modal,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "../../shared/components/common/SafeAreaView";
 import styled, { useTheme } from "styled-components/native";
@@ -13,9 +14,12 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
-import { useSafeAreaInsets } from "react-native-safe-area-context"; // ✅ 추가
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Button from "../../shared/components/common/Button";
 import { SleepStackParamList } from "../../app/navigation/RootNavigator";
+import Controller from "../../services/controller";
+import { getMemberId } from "../../services/authService";
 import MorningBackground from "../../../assets/image/alarm-morning-background.svg";
 import NightBackground from "../../../assets/image/alarm-night-background.svg";
 import MoonSvg from "../../../assets/icon/moon.svg";
@@ -261,15 +265,19 @@ type SleepScreenNavigationProp = NativeStackNavigationProp<
   "Sleep"
 >;
 
+const SLEEP_START_TIME_KEY = "@sleep_start_time";
+
 const AlarmScreen = () => {
   const theme = useTheme();
-  const insets = useSafeAreaInsets(); // ✅ 추가
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<SleepScreenNavigationProp>();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [alarmTime, setAlarmTime] = useState(new Date());
   const [sleepStatus, setSleepStatus] = useState<"sleeping" | "stopped">(
     "sleeping",
   );
+  const [sleepStartTime, setSleepStartTime] = useState<Date | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [isAlarmChangeModalVisible, setIsAlarmChangeModalVisible] =
     useState(false);
@@ -305,6 +313,27 @@ const AlarmScreen = () => {
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  // 수면 시작 시간 저장 (화면 진입 시)
+  useEffect(() => {
+    const initSleepStartTime = async () => {
+      try {
+        const stored = await AsyncStorage.getItem(SLEEP_START_TIME_KEY);
+        if (stored) {
+          setSleepStartTime(new Date(stored));
+        } else {
+          // 저장된 시작 시간이 없으면 현재 시간 저장
+          const now = new Date();
+          await AsyncStorage.setItem(SLEEP_START_TIME_KEY, now.toISOString());
+          setSleepStartTime(now);
+        }
+      } catch (error) {
+        console.error("수면 시작 시간 초기화 실패:", error);
+        setSleepStartTime(new Date());
+      }
+    };
+    initSleepStartTime();
   }, []);
 
   useEffect(() => {
@@ -405,12 +434,63 @@ const AlarmScreen = () => {
     setIsMoodModalVisible(true);
   };
 
-  const handleMoodSelect = (mood: "bad" | "normal" | "good") => {
+  const handleMoodSelect = async (mood: "bad" | "normal" | "good") => {
+    if (isSaving) return;
+
     setSelectedMood(mood);
-    setTimeout(() => {
+    setIsSaving(true);
+
+    try {
+      const endTime = new Date();
+      const startTime = sleepStartTime || new Date(endTime.getTime() - 8 * 60 * 60 * 1000); // 기본 8시간
+
+      // 수면 시간 계산 (분 단위)
+      const minutesAsleep = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+      const timeInBed = minutesAsleep;
+
+      // 수면 날짜 (종료 시간 기준)
+      const sleepDate = endTime.toISOString().split("T")[0];
+
+      // 기분을 효율성 점수로 변환
+      const moodToEfficiency: Record<string, number> = {
+        bad: 50,
+        normal: 70,
+        good: 90,
+      };
+
+      const memberId = await getMemberId();
+      if (!memberId) {
+        throw new Error("로그인이 필요합니다.");
+      }
+
+      const controller = new Controller({
+        modelName: "SleepRecord",
+        modelId: "sleep_record",
+      });
+
+      await controller.create({
+        APP_MEMBER_IDENTIFICATION_CODE: memberId,
+        SLEEP_DATE: sleepDate,
+        START_TIME: startTime.toISOString(),
+        END_TIME: endTime.toISOString(),
+        MINUTES_ASLEEP: minutesAsleep,
+        TIME_IN_BED: timeInBed,
+        EFFICIENCY: moodToEfficiency[mood],
+        WAKE_MOOD: mood.toUpperCase(),
+      });
+
+      // 저장 성공 시 시작 시간 초기화
+      await AsyncStorage.removeItem(SLEEP_START_TIME_KEY);
+
+      console.log("수면 기록 저장 완료");
+    } catch (error) {
+      console.error("수면 기록 저장 실패:", error);
+      Alert.alert("알림", "수면 기록 저장에 실패했습니다.");
+    } finally {
+      setIsSaving(false);
       setIsMoodModalVisible(false);
       navigation.navigate("Sleep");
-    }, 300);
+    }
   };
 
   const formatTime = (date: Date) => {
