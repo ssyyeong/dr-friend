@@ -57,6 +57,8 @@ export type RootStackParamList = {
   Splash: undefined;
   Auth: undefined;
   MainTab: undefined;
+  SleepGoal: undefined;
+  SleepGoalForm: { mode?: "create" | "edit"; sleepGoal?: any };
 };
 
 export type AuthStackParamList = {
@@ -346,6 +348,8 @@ const RootNavigator = () => {
         <RootStack.Screen name="Splash" component={SplashScreen} />
         <RootStack.Screen name="Auth" component={AuthStackNavigator} />
         <RootStack.Screen name="MainTab" component={MainTabNavigator} />
+        <RootStack.Screen name="SleepGoal" component={SleepGoalScreen} />
+        <RootStack.Screen name="SleepGoalForm" component={SleepGoalFormScreen} />
       </RootStack.Navigator>
     </NavigationContainer>
   );

@@ -4,7 +4,12 @@
       "Bash(grep:*)",
       "mcp__ide__getDiagnostics",
       "Bash(npx tsc:*)",
-      "Bash(npx expo run:ios)"
+      "Bash(npx expo run:ios)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: 로그인 후 뒤로가기 시 로그아웃되는 문제 수정\n\nnavigate\\(\\) 대신 reset\\(\\)을 사용하여 네비게이션 스택을 완전히 교체하도록 변경\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Fitbit 연동을 위한 기기 연결 관리 화면 추가\n\n- DeviceManageScreen 생성 \\(Fitbit 연동 토글\\)\n- ProfileScreen의 \"기기 연결 관리\" 메뉴에 onPress 연결\n- ProfileStackParamList에 DeviceManage 추가\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }

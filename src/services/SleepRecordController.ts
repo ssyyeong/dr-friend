@@ -35,6 +35,7 @@ class SleepRecordController {
   }
 
   async syncFromFitbit(option: IControllerOptions): Promise<any> {
+    console.log("syncFromFitbit", option);
     const params = option;
     const url = `${this.apiUrl}${this.rootRoute}/${this.role}/${this.modelId}/sync`;
     const response = await axios.post(url, params);

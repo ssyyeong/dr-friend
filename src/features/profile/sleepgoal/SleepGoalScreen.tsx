@@ -2,15 +2,11 @@ import React, { useState, useCallback } from "react";
 import { ScrollView } from "react-native";
 import { SafeAreaView } from "../../../shared/components/common/SafeAreaView";
 import styled, { useTheme } from "styled-components/native";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useFocusEffect } from "@react-navigation/native";
-import { ProfileStackParamList } from "../../../app/navigation/RootNavigator";
+import { useFocusEffect, useNavigation, NavigationProp } from "@react-navigation/native";
 import Header from "../../../shared/components/common/Header";
 import Button from "../../../shared/components/common/Button";
 import { getMemberId } from "../../../services/authService";
 import Controller from "../../../services/controller";
-
-type Props = NativeStackScreenProps<ProfileStackParamList, "SleepGoal">;
 
 const Screen = styled(SafeAreaView)`
   flex: 1;
@@ -155,8 +151,9 @@ interface SleepGoalData {
   BEDTIME_ALARM_TYPE: string;
 }
 
-const SleepGoalScreen: React.FC<Props> = ({ navigation }) => {
+const SleepGoalScreen = () => {
   const theme = useTheme();
+  const navigation = useNavigation<NavigationProp<any>>();
   const [sleepGoals, setSleepGoals] = useState<SleepGoalData[]>([]);
   const [loading, setLoading] = useState(true);
 

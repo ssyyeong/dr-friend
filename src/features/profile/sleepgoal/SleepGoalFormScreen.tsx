@@ -2,16 +2,13 @@ import React, { useState, useRef, useMemo, useCallback } from "react";
 import { ScrollView, Modal } from "react-native";
 import { SafeAreaView } from "../../../shared/components/common/SafeAreaView";
 import styled, { useTheme } from "styled-components/native";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "@react-navigation/native";
-import { ProfileStackParamList } from "../../../app/navigation/RootNavigator";
+import { useFocusEffect, useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { RootStackParamList } from "../../../app/navigation/RootNavigator";
 import Header from "../../../shared/components/common/Header";
 import ToggleSwitch from "../../../shared/components/common/ToggleSwitch";
 import { getMemberId } from "../../../services/authService";
 import Controller from "../../../services/controller";
-
-type Props = NativeStackScreenProps<ProfileStackParamList, "SleepGoalForm">;
 
 const Screen = styled(SafeAreaView)`
   flex: 1;
@@ -351,8 +348,10 @@ const indexToDayName = (index: number): string => {
   return DAYS[index];
 };
 
-const SleepGoalFormScreen: React.FC<Props> = ({ navigation, route }) => {
+const SleepGoalFormScreen = () => {
   const theme = useTheme();
+  const navigation = useNavigation();
+  const route = useRoute<RouteProp<RootStackParamList, "SleepGoalForm">>();
   const mode = route.params?.mode || "create";
   const sleepGoal = route.params?.sleepGoal;
 

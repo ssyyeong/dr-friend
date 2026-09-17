@@ -1113,7 +1113,7 @@ const DiaryScreen = () => {
           <Button
             variant="primary"
             onPress={() =>
-              navigation.navigate("Profile", { screen: "SleepGoal" })
+              navigation.navigate("SleepGoal")
             }
           >
             수면 목표 설정하기
@@ -1213,7 +1213,7 @@ const DiaryScreen = () => {
                 <GoalManageButton
                   activeOpacity={0.7}
                   onPress={() =>
-                    navigation.navigate("Profile", { screen: "SleepGoal" })
+                    navigation.navigate("SleepGoal")
                   }
                 >
                   <GoalManageButtonText>목표 관리</GoalManageButtonText>
