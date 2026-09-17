@@ -2,11 +2,11 @@ import React, { useState, useEffect } from "react";
 import {
   Modal,
   Pressable,
-  KeyboardAvoidingView,
   Platform,
   StyleSheet,
   View,
-  ScrollView,
+  Keyboard,
+  Animated,
 } from "react-native";
 import styled, { useTheme } from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -45,7 +45,8 @@ const DiaryInput = styled.TextInput`
   background-color: rgba(79, 107, 145, 0.24);
   border-radius: ${({ theme }) => theme.radius.md}px;
   padding: 16px;
-  min-height: 200px;
+  min-height: 150px;
+  max-height: 200px;
   font-size: 16px;
   color: ${({ theme }) => theme.colors.text};
   text-align-vertical: top;
@@ -75,9 +76,11 @@ const SleepDiaryModal: React.FC<SleepDiaryModalProps> = ({
   onSave,
 }) => {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   // 임시 텍스트 state (취소 시 원본 유지를 위해)
   const [tempText, setTempText] = useState(diaryText);
+  const [keyboardHeight] = useState(new Animated.Value(0));
 
   // 모달이 열릴 때마다 현재 텍스트로 초기화
   useEffect(() => {
@@ -86,84 +89,109 @@ const SleepDiaryModal: React.FC<SleepDiaryModalProps> = ({
     }
   }, [visible, diaryText]);
 
+  // 키보드 높이 감지
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const keyboardShowListener = Keyboard.addListener(showEvent, (e) => {
+      Animated.timing(keyboardHeight, {
+        toValue: e.endCoordinates.height,
+        duration: Platform.OS === "ios" ? 250 : 100,
+        useNativeDriver: false,
+      }).start();
+    });
+
+    const keyboardHideListener = Keyboard.addListener(hideEvent, () => {
+      Animated.timing(keyboardHeight, {
+        toValue: 0,
+        duration: Platform.OS === "ios" ? 250 : 100,
+        useNativeDriver: false,
+      }).start();
+    });
+
+    return () => {
+      keyboardShowListener.remove();
+      keyboardHideListener.remove();
+    };
+  }, []);
+
   const handleSave = () => {
-    onDiaryTextChange(tempText); // 저장 시에만 부모에게 전달
+    Keyboard.dismiss();
+    onDiaryTextChange(tempText);
     onSave();
     onClose();
   };
 
   const handleCancel = () => {
-    setTempText(diaryText); // 임시 텍스트를 원본으로 되돌림
+    Keyboard.dismiss();
+    setTempText(diaryText);
     onClose();
   };
+
+  // 하단 패딩: 키보드 높이 또는 safe area bottom
+  const bottomPadding = keyboardHeight.interpolate({
+    inputRange: [0, 1],
+    outputRange: [insets.bottom || 24, 1],
+    extrapolate: "clamp",
+  });
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
-      onRequestClose={onClose}
+      animationType="slide"
+      onRequestClose={handleCancel}
       statusBarTranslucent
-      presentationStyle="overFullScreen" // ✅ iOS에서 확실히 전체 덮기
-      hardwareAccelerated // ✅ Android z-order 안정화
     >
       <View style={styles.root}>
-        {/* ✅ 화면 전체 덮는 딤 + 바깥 터치 닫기 */}
+        {/* 배경 딤 + 바깥 터치 닫기 */}
         <Pressable
           style={[StyleSheet.absoluteFillObject, styles.backdrop]}
-          onPress={onClose}
+          onPress={handleCancel}
         />
 
-        {/* ✅ 키보드가 입력창을 가리지 않도록 수정 */}
-        <KeyboardAvoidingView
-          style={styles.kav}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+        {/* 모달 카드 */}
+        <Animated.View
+          style={[
+            styles.cardContainer,
+            {
+              paddingBottom: keyboardHeight,
+            },
+          ]}
         >
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            bounces={false}
-          >
-            <ModalCard
-              style={[
-                styles.cardShadow,
-                {
-                  maxHeight: "90%",
-                },
-              ]}
-            >
-              <ModalHeader>
-                <ModalTitle>{title}</ModalTitle>
-                <CloseButton onPress={handleCancel} activeOpacity={0.8}>
-                  <Ionicons name="close" size={24} color={theme.colors.text} />
-                </CloseButton>
-              </ModalHeader>
+          <ModalCard style={{ paddingBottom: Math.max(insets.bottom, 24) }}>
+            <ModalHeader>
+              <ModalTitle>{title}</ModalTitle>
+              <CloseButton onPress={handleCancel} activeOpacity={0.8}>
+                <Ionicons name="close" size={24} color={theme.colors.text} />
+              </CloseButton>
+            </ModalHeader>
 
-              <DiaryInput
-                placeholder="오늘 하루 기억에 남는 일을 작성해 보세요."
-                placeholderTextColor={theme.colors.gray400}
-                value={tempText}
-                onChangeText={setTempText}
-                multiline
-                autoFocus
-              />
+            <DiaryInput
+              placeholder="오늘 하루 기억에 남는 일을 작성해 보세요."
+              placeholderTextColor={theme.colors.gray400}
+              value={tempText}
+              onChangeText={setTempText}
+              multiline
+              autoFocus={false}
+              scrollEnabled={true}
+            />
 
-              <ButtonContainer>
-                <Button variant="block" onPress={handleCancel} style={{ flex: 1 }}>
-                  취소
-                </Button>
-                <Button
-                  variant="primary"
-                  onPress={handleSave}
-                  style={{ flex: 1 }}
-                >
-                  저장
-                </Button>
-              </ButtonContainer>
-            </ModalCard>
-          </ScrollView>
-        </KeyboardAvoidingView>
+            <ButtonContainer>
+              <Button variant="block" onPress={handleCancel} style={{ flex: 1 }}>
+                취소
+              </Button>
+              <Button
+                variant="primary"
+                onPress={handleSave}
+                style={{ flex: 1 }}
+              >
+                저장
+              </Button>
+            </ButtonContainer>
+          </ModalCard>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -175,19 +203,10 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   backdrop: {
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
-  kav: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "flex-end",
-  },
-  cardShadow: {
-    elevation: 20,
-    zIndex: 999,
+  cardContainer: {
+    width: "100%",
   },
 });
 
