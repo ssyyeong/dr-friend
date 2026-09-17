@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   Pressable,
@@ -6,6 +6,7 @@ import {
   Platform,
   StyleSheet,
   View,
+  ScrollView,
 } from "react-native";
 import styled, { useTheme } from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -75,8 +76,24 @@ const SleepDiaryModal: React.FC<SleepDiaryModalProps> = ({
 }) => {
   const theme = useTheme();
 
+  // 임시 텍스트 state (취소 시 원본 유지를 위해)
+  const [tempText, setTempText] = useState(diaryText);
+
+  // 모달이 열릴 때마다 현재 텍스트로 초기화
+  useEffect(() => {
+    if (visible) {
+      setTempText(diaryText);
+    }
+  }, [visible, diaryText]);
+
   const handleSave = () => {
+    onDiaryTextChange(tempText); // 저장 시에만 부모에게 전달
     onSave();
+    onClose();
+  };
+
+  const handleCancel = () => {
+    setTempText(diaryText); // 임시 텍스트를 원본으로 되돌림
     onClose();
   };
 
@@ -97,48 +114,55 @@ const SleepDiaryModal: React.FC<SleepDiaryModalProps> = ({
           onPress={onClose}
         />
 
-        {/* ✅ 아래에서 올라오는 카드 레이아웃을 flex로 안정화 */}
+        {/* ✅ 키보드가 입력창을 가리지 않도록 수정 */}
         <KeyboardAvoidingView
           style={styles.kav}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
         >
-          <ModalCard
-            style={[
-              styles.cardShadow,
-              {
-                maxHeight: "90%",
-              },
-            ]}
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
           >
-            <ModalHeader>
-              <ModalTitle>{title}</ModalTitle>
-              <CloseButton onPress={onClose} activeOpacity={0.8}>
-                <Ionicons name="close" size={24} color={theme.colors.text} />
-              </CloseButton>
-            </ModalHeader>
+            <ModalCard
+              style={[
+                styles.cardShadow,
+                {
+                  maxHeight: "90%",
+                },
+              ]}
+            >
+              <ModalHeader>
+                <ModalTitle>{title}</ModalTitle>
+                <CloseButton onPress={handleCancel} activeOpacity={0.8}>
+                  <Ionicons name="close" size={24} color={theme.colors.text} />
+                </CloseButton>
+              </ModalHeader>
 
-            <DiaryInput
-              placeholder="오늘 하루 기억에 남는 일을 작성해 보세요."
-              placeholderTextColor={theme.colors.gray400}
-              value={diaryText}
-              onChangeText={onDiaryTextChange}
-              multiline
-              autoFocus
-            />
+              <DiaryInput
+                placeholder="오늘 하루 기억에 남는 일을 작성해 보세요."
+                placeholderTextColor={theme.colors.gray400}
+                value={tempText}
+                onChangeText={setTempText}
+                multiline
+                autoFocus
+              />
 
-            <ButtonContainer>
-              <Button variant="block" onPress={onClose} style={{ flex: 1 }}>
-                취소
-              </Button>
-              <Button
-                variant="primary"
-                onPress={handleSave}
-                style={{ flex: 1 }}
-              >
-                저장
-              </Button>
-            </ButtonContainer>
-          </ModalCard>
+              <ButtonContainer>
+                <Button variant="block" onPress={handleCancel} style={{ flex: 1 }}>
+                  취소
+                </Button>
+                <Button
+                  variant="primary"
+                  onPress={handleSave}
+                  style={{ flex: 1 }}
+                >
+                  저장
+                </Button>
+              </ButtonContainer>
+            </ModalCard>
+          </ScrollView>
         </KeyboardAvoidingView>
       </View>
     </Modal>
@@ -151,10 +175,14 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   backdrop: {
-    backgroundColor: "rgba(0,0,0,0.45)", // ✅ 탭바가 더 안 보이게 원하면 0.55~0.6
+    backgroundColor: "rgba(0,0,0,0.45)",
   },
   kav: {
     flex: 1,
+    justifyContent: "flex-end",
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: "flex-end",
   },
   cardShadow: {
