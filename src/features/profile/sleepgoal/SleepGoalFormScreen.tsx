@@ -4,7 +4,7 @@ import { SafeAreaView } from "../../../shared/components/common/SafeAreaView";
 import styled, { useTheme } from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { RootStackParamList } from "../../../app/navigation/RootNavigator";
+import { DiaryStackParamList, ProfileStackParamList } from "../../../app/navigation/RootNavigator";
 import Header from "../../../shared/components/common/Header";
 import ToggleSwitch from "../../../shared/components/common/ToggleSwitch";
 import { getMemberId } from "../../../services/authService";
@@ -351,7 +351,7 @@ const indexToDayName = (index: number): string => {
 const SleepGoalFormScreen = () => {
   const theme = useTheme();
   const navigation = useNavigation();
-  const route = useRoute<RouteProp<RootStackParamList, "SleepGoalForm">>();
+  const route = useRoute<RouteProp<DiaryStackParamList, "SleepGoalForm">>();
   const mode = route.params?.mode || "create";
   const sleepGoal = route.params?.sleepGoal;
 

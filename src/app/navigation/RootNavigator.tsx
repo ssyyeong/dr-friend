@@ -57,8 +57,6 @@ export type RootStackParamList = {
   Splash: undefined;
   Auth: undefined;
   MainTab: undefined;
-  SleepGoal: undefined;
-  SleepGoalForm: { mode?: "create" | "edit"; sleepGoal?: any };
 };
 
 export type AuthStackParamList = {
@@ -88,6 +86,12 @@ export type SleepStackParamList = {
   Sleep: undefined;
   DevicePlace: undefined;
   Alarm: undefined;
+};
+
+export type DiaryStackParamList = {
+  DiaryMain: undefined;
+  SleepGoal: undefined;
+  SleepGoalForm: { mode?: "create" | "edit"; sleepGoal?: any };
 };
 
 export type ProfileStackParamList = {
@@ -137,6 +141,7 @@ export type CareStackParamList = {
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const SleepStack = createNativeStackNavigator<SleepStackParamList>();
+const DiaryStack = createNativeStackNavigator<DiaryStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 const CareStack = createNativeStackNavigator<CareStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -187,6 +192,20 @@ const SleepStackNavigator = () => {
       <SleepStack.Screen name="DevicePlace" component={DevicePlaceScreen} />
       <SleepStack.Screen name="Alarm" component={AlarmScreen} />
     </SleepStack.Navigator>
+  );
+};
+
+const DiaryStackNavigator = () => {
+  return (
+    <DiaryStack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <DiaryStack.Screen name="DiaryMain" component={DiaryScreen} />
+      <DiaryStack.Screen name="SleepGoal" component={SleepGoalScreen} />
+      <DiaryStack.Screen name="SleepGoalForm" component={SleepGoalFormScreen} />
+    </DiaryStack.Navigator>
   );
 };
 
@@ -306,7 +325,7 @@ const MainTabNavigator = () => {
       />
       <Tab.Screen
         name="Diary"
-        component={DiaryScreen}
+        component={DiaryStackNavigator}
         options={{ title: "수면 기록" }}
       />
       <Tab.Screen
@@ -348,8 +367,6 @@ const RootNavigator = () => {
         <RootStack.Screen name="Splash" component={SplashScreen} />
         <RootStack.Screen name="Auth" component={AuthStackNavigator} />
         <RootStack.Screen name="MainTab" component={MainTabNavigator} />
-        <RootStack.Screen name="SleepGoal" component={SleepGoalScreen} />
-        <RootStack.Screen name="SleepGoalForm" component={SleepGoalFormScreen} />
       </RootStack.Navigator>
     </NavigationContainer>
   );
