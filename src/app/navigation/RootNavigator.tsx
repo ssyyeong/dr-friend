@@ -23,6 +23,7 @@ import ProfileScreen from "../../features/profile/ProfileScreen";
 import SettingScreen from "../../features/profile/setting/SettingScreen";
 import ProductSelectScreen from "../../features/profile/setting/ProductSelectScreen";
 import AuthScreen from "../../features/profile/AuthScreen";
+import DeviceManageScreen from "../../features/profile/DeviceManageScreen";
 import SupportScreen from "../../features/profile/support/SupportScreen";
 import NoticeDetailScreen from "../../features/profile/support/NoticeDetailScreen";
 import QnaScreen from "../../features/profile/qna/QnaScreen";
@@ -92,6 +93,7 @@ export type ProfileStackParamList = {
   Setting: undefined;
   ProductSelect: undefined;
   Auth: undefined;
+  DeviceManage: undefined;
   Support: undefined;
   NoticeDetail: {
     notice: {
@@ -200,6 +202,7 @@ const ProfileStackNavigator = () => {
         component={ProductSelectScreen}
       />
       <ProfileStack.Screen name="Auth" component={AuthScreen} />
+      <ProfileStack.Screen name="DeviceManage" component={DeviceManageScreen} />
       <ProfileStack.Screen name="Support" component={SupportScreen} />
       <ProfileStack.Screen name="NoticeDetail" component={NoticeDetailScreen} />
       <ProfileStack.Screen name="Qna" component={QnaScreen} />

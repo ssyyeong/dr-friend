@@ -283,6 +283,7 @@ const ProfileScreen = () => {
     {
       icon: require("../../../assets/icon/device.svg"),
       label: "기기 연결 관리",
+      onPress: () => navigation.navigate("DeviceManage"),
     },
     // {
     //   icon: require("../../../assets/icon/language.svg"),
