@@ -3,7 +3,7 @@ import styled from "styled-components/native";
 import { SafeAreaView } from "../../../shared/components/common/SafeAreaView";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
-import { ScrollView } from "react-native";
+import { ScrollView, Alert } from "react-native";
 import { AuthStackParamList } from "../../../app/navigation/RootNavigator";
 import Button from "../../../shared/components/common/Button";
 import AppMemberController from "../../../services/AppMemberController";
@@ -165,6 +165,20 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
     setAgreePrivacy(newValue);
   };
 
+  const handleAgreeTerms = () => {
+    const newValue = !agreeTerms;
+    setAgreeTerms(newValue);
+    // 두 개별 항목이 모두 true일 때만 agreeAll을 true로
+    setAgreeAll(newValue && agreePrivacy);
+  };
+
+  const handleAgreePrivacy = () => {
+    const newValue = !agreePrivacy;
+    setAgreePrivacy(newValue);
+    // 두 개별 항목이 모두 true일 때만 agreeAll을 true로
+    setAgreeAll(agreeTerms && newValue);
+  };
+
   // 인증번호 전송
   const handleSendVerificationCode = async () => {
     // 전화번호 유효성 검사
@@ -273,8 +287,14 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSignup = async () => {
+    // 필수 약관 동의 체크
+    if (!agreeTerms || !agreePrivacy) {
+      Alert.alert("알림", "필수 약관에 모두 동의해주세요.");
+      return;
+    }
+
     if (!isVerified) {
-      console.warn("인증이 완료되지 않았습니다.");
+      Alert.alert("알림", "본인 인증을 완료해주세요.");
       return;
     }
 
@@ -411,7 +431,7 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
                   <AllAgreementText>모두 동의</AllAgreementText>
                 </AgreementAll>
 
-                <AgreementItem onPress={() => setAgreeTerms(!agreeTerms)}>
+                <AgreementItem onPress={handleAgreeTerms}>
                   <CheckboxContainer>
                     {agreeTerms ? (
                       <PrimaryCheckSvg width={20} height={20} />
@@ -426,7 +446,7 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
                 </AgreementItem>
 
                 <AgreementItemLast
-                  onPress={() => setAgreePrivacy(!agreePrivacy)}
+                  onPress={handleAgreePrivacy}
                 >
                   <CheckboxContainer>
                     {agreePrivacy ? (
